@@ -153,7 +153,7 @@ contract ('VotingEscrow', ([deployer, receiver, sender, checker, testUser]) => {
             }
         })
         
-        // throws error: header not found
+        //TypeError: Cannot read property '0' of null
         it('calculates the total voting power at an epoch time', async() => {
             epoch_time = 1646241122
             result = await escrow.totalSupply(epoch_time);

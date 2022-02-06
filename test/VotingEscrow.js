@@ -22,7 +22,6 @@ contract ('VotingEscrow', ([deployer, receiver, sender, checker, testUser]) => {
     describe('deployment checks for voting escrow', async () => {
 
         it('Should deploy the smart contract properly', async() => {
-            console.log(escrow.address);
             assert(escrow.address !== '', "Has not deployed correctly");
         })
     })
@@ -84,7 +83,6 @@ contract ('VotingEscrow', ([deployer, receiver, sender, checker, testUser]) => {
             // after creating the lock
             const balance1 = await escrow.balanceOf(address);
             console.log("Balance of deployer after creating lock: ", balance1.toNumber());
-            console.log(balance1);
             assert(balance.toNumber() != balance1.toNumber(), "Function not working");
         })
     })
@@ -125,7 +123,6 @@ contract ('VotingEscrow', ([deployer, receiver, sender, checker, testUser]) => {
             const addr = deployer;
             result = await escrow.getVotingPowerAt(addr, unlock_time);
             console.log("The user voting power is:", result.toString());
-            console.log(result);
         })
         
         it('gets the voting power of the msg.sender', async() => {

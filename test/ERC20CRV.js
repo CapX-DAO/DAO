@@ -15,37 +15,31 @@ contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver]) => {
     describe('deployment checks for ERC20CRV', () => {
 
         it('Should deploy the smart contract properly', async() => {
-
             assert(token.address !== '');
         })
 
         it('Check the name of the token', async() => {
             const result = await token.name();
-
             assert(result === "CAPX Token");
         })
 
         it('Check the symbol of the token', async() => {
             const result = await token.symbol();
-
             assert(result === "CAPX");
         })
 
         it('Check the decimals', async() => {
             const result = await token.decimals();
-
             assert(result.toNumber() === 18);
         })
 
         it('Check the total supply', async() => {
             const result = await token.totalSupply();
-
             assert(result.toNumber() === 1303030303);
         })
 
         it('Check the balance of any user', async() => {
             const result = await token.balanceOf(deployer);
-
             assert(result.toString() === "1303030303");
         })
 
@@ -66,7 +60,6 @@ contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver]) => {
     });
 
 
-        // working 
         it('checks the amount of tokens that an owner is allowed to a spender', async() => {
             // allowance() function
             await token.approve(receiver, 20 ,{from : deployer});
@@ -84,9 +77,7 @@ contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver]) => {
 
             // before transfer
             balanceOf = await token.balanceOf(deployer);
-
             balanceOf = await token.balanceOf(receiver);
-
 
             const value = await token.allowance(deployer, receiver);
 
@@ -97,21 +88,17 @@ contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver]) => {
 
             // after transfer
             balanceOf = await token.balanceOf(deployer);
-
             balanceOf = await token.balanceOf(receiver);
 
         })
 
 
         it('checks if transfer from one account to another', async() => {
-            // transferFrom() function
+
 
             // before transferFrom()
             let balance1 = await token.balanceOf(deployer);
-
             let balance2 = await token.balanceOf(receiver);
-
-
             await token.approve(sender, 100, {from : deployer});
             let value_to_send = 20;
             // transfer
@@ -119,7 +106,6 @@ contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver]) => {
 
             // after transferFrom()
             balance3 = await token.balanceOf(deployer);
-
             balance4 = await token.balanceOf(receiver);
 
 
@@ -138,26 +124,18 @@ contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver]) => {
             const result = await token.approve(spender_address, value, {from : deployer});
             const balance3 = await token.balanceOf(sender);
             const balance4 = await token.balanceOf(deployer);
-
-
-
         })
-
-
     })
         
 
 
     describe('burn tokens', async() => {
         it('check if able to burn tokens', async() => {
-            // burn() function
+
             let currentTotalSupply
             currentTotalSupply = await token.totalSupply();
-
             const result = await token.burn(3);
             const newCurrentTotalSupply = await token.totalSupply();
-
-
             assert(newCurrentTotalSupply <= currentTotalSupply);
         })
     })
@@ -168,15 +146,9 @@ contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver]) => {
 
             // getting the admin address: 
             const admin = await token.get_admin();
-
-
             assert(admin.toString() === deployer.toString(), "You are not the admin");
             await token.set_admin(sender);
-
-
             let new_admin = await token.get_admin();
-
-
             assert(new_admin.toString() === sender.toString(), "Function not working correctly");
         })
     })
@@ -186,18 +158,10 @@ contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver]) => {
         it('if it is the admin', async() => {
             const token_name = "Hello"
             const symbol = "HELL"
-
             const current_admin = await token.get_admin();
-
-
             await token.set_name(token_name, symbol);
-
             let new_token = await token.name();
             let new_symbol = await token.symbol();
-
-
-
-
             assert(new_token.toString() === token_name.toString());
             assert(new_symbol.toString() === symbol.toString());
         })

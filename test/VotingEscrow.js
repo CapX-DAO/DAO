@@ -99,7 +99,7 @@ contract ('VotingEscrow', ([deployer, receiver, sender, checker, testUser]) => {
         // throwing gas consumption error
         it('increase the amount to be locked', async() => {
             balance = await escrow.balanceOf(address);
-            
+            await token.approve(escrow.address , value);
             value = 126144001;
             await escrow.increase_amount(value);
             balance1 = await escrow.balanceOf(address);

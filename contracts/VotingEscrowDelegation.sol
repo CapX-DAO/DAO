@@ -568,20 +568,17 @@ function _mint(address _to,uint256 _token_id) public {
 //     token.expire_time = _expire_time
 //     self.boost_tokens[_token_id] = token
 
-function _mint_boost(uint256 _token_id,address _delegator,address _receiver,int256 _bias,int256 _slope,uint256 _cancel_time,uint256 _expire_time) public {
-    uint256 is_whitelist = (grey_list[_receiver][ZERO_ADDRESS] ? 1 : 0);
-    uint256 delegator_status = (grey_list[_receiver][_delegator] ? 1 : 0);
-    require (((is_whitelist ^ delegator_status)== 0), "mint boost not allowed"); // dev: mint boost not allowed
+function _mint_boost(uint256 _token_id,address _delegator,address _receiver,Point memory point,uint256 _cancel_time,uint256 _expire_time) public {
+    // uint256 is_whitelist = (grey_list[_receiver][ZERO_ADDRESS] ? 1 : 0);
+    // uint256 delegator_status = (grey_list[_receiver][_delegator] ? 1 : 0);
+    require ((((grey_list[_receiver][ZERO_ADDRESS] ? 1 : 0) ^ (grey_list[_receiver][_delegator] ? 1 : 0))== 0), "mint boost not allowed"); // dev: mint boost not allowed
 
-    uint256 data = shift(inttouint(_bias), 128) + inttouint(abs(_slope));
+    uint256 data = shift(inttouint(point.bias), 128) + inttouint(abs(point.slope));
     boost[_delegator].delegated += data;
     boost[_receiver].received += data;
-
-    Token memory token = boost_tokens[_token_id];
-    token.data = data;
-    token.dinfo = token.dinfo + _cancel_time;
-    token.expire_time = _expire_time;
-    boost_tokens[_token_id] = token;
+    boost_tokens[_token_id].data = data;
+    boost_tokens[_token_id].dinfo = boost_tokens[_token_id].dinfo + _cancel_time;
+    boost_tokens[_token_id].expire_time = _expire_time;
 }
 
 
@@ -1244,8 +1241,8 @@ function create_boost(
     require(msg.sender == _delegator || isApprovedForAll[_delegator][msg.sender],"only delegator or operator");  // dev: only delegator or operator
 
     uint256 expire_time = (_expire_time / WEEK) * WEEK;
-    uint256 expiry_data = boost[_delegator].expiry_data;
-    uint256 next_expiry = expiry_data % 2 ** 128;
+    // uint256 expiry_data = boost[_delegator].expiry_data;
+    uint256 next_expiry = boost[_delegator].expiry_data % 2 ** 128;
 
     if (next_expiry == 0) {
         next_expiry = MAX_UINT256;
@@ -1268,26 +1265,26 @@ function create_boost(
     // delegated slope and bias
     Point memory point = _deconstruct_bias_slope(boost[_delegator].delegated);
 
-    int256 time = uinttoint(block.timestamp);
+    // int256 time = uinttoint(block.timestamp);
 
     // delegated boost will be positive, if any of circulating boosts are negative
     // we have already reverted
-    int256 delegated_boost = point.slope * time + point.bias;
-    int256 y = (_percentage) * ((uinttoint(VotingEscrow(VOTING_ESCROW).balanceOf(_delegator))) - delegated_boost) / uinttoint(MAX_PCT);
+    // int256 delegated_boost = point.slope * time + point.bias;
+    int256 y = (_percentage) * ((uinttoint(VotingEscrow(VOTING_ESCROW).balanceOf(_delegator))) - (point.slope * uinttoint(block.timestamp) + point.bias)) / uinttoint(MAX_PCT);
     require(y > 0, "no boost");
 
-    point = _calc_bias_slope(time, y, uinttoint(expire_time));
+    point = _calc_bias_slope(uinttoint(block.timestamp), y, uinttoint(expire_time));
     require(point.slope < 0, "invalid slope");
 
 
-    _mint_boost(token_id, _delegator, _receiver, point.bias, point.slope, _cancel_time, expire_time);
+    _mint_boost(token_id, _delegator, _receiver, point, _cancel_time, expire_time);
 
     // increase the number of expiries for the user
     if (expire_time < next_expiry) {
         next_expiry = expire_time;
     }
 
-    uint256 active_delegations = shift(expiry_data, -128);
+    uint256 active_delegations = shift(boost[_delegator].expiry_data, -128);
     account_expiries[_delegator][expire_time] += 1;
     boost[_delegator].expiry_data = shift(active_delegations + 1, 128) + next_expiry;
 
@@ -1425,8 +1422,8 @@ function extend_boost(uint256 _token_id , int256 _percentage , uint256 _expiry_t
     // storage variables have been updated: next_expiry + active_delegations
     _burn_boost(_token_id, delegator, receiver, point.bias, point.slope);
 
-    uint256 expiry_data = boost[delegator].expiry_data;
-    uint256 next_expiry = expiry_data % 2 ** 128;
+    // uint256 expiry_data = boost[delegator].expiry_data;
+    uint256 next_expiry = boost[delegator].expiry_data % 2 ** 128;
 
     if (next_expiry == 0) {
         next_expiry = MAX_UINT256;
@@ -1438,8 +1435,8 @@ function extend_boost(uint256 _token_id , int256 _percentage , uint256 _expiry_t
     point = _deconstruct_bias_slope(boost[delegator].delegated);
 
     // verify delegated boost isn't negative, else it'll inflate out vecrv balance
-    int256 delegated_boost = point.slope * time + point.bias;
-    int256 y = _percentage * (uinttoint(VotingEscrow(VOTING_ESCROW).balanceOf(delegator)) - delegated_boost) / uinttoint(MAX_PCT);
+    // int256 delegated_boost = point.slope * time + point.bias;
+    int256 y = _percentage * (uinttoint(VotingEscrow(VOTING_ESCROW).balanceOf(delegator)) - (point.slope * time + point.bias)) / uinttoint(MAX_PCT);
 
     // a delegator can snipe the exact moment a token expires and create a boost
     // with 10_000 or some percentage of their boost, which is perfectly fine.
@@ -1451,16 +1448,16 @@ function extend_boost(uint256 _token_id , int256 _percentage , uint256 _expiry_t
     point = _calc_bias_slope(time, y, uinttoint(expire_time));
     require(point.slope < 0,"invalid slope"); // dev: invalid slope
 
-    _mint_boost(_token_id, delegator, receiver, point.bias, point.slope, _cancel_time, expire_time);
+    _mint_boost(_token_id, delegator, receiver, point, _cancel_time, expire_time);
 
     // increase the number of expiries for the user
     if (expire_time < next_expiry) {
         next_expiry = expire_time;
     }
 
-    uint256 active_delegations = shift(expiry_data, -128);
+    // uint256 active_delegations = shift(expiry_data, -128);
     account_expiries[delegator][expire_time] += 1;
-    boost[delegator].expiry_data = shift(active_delegations + 1, 128) + next_expiry;
+    boost[delegator].expiry_data = shift((shift(boost[delegator].expiry_data, -128)) + 1, 128) + next_expiry;
     
     emit ExtendBoost(delegator, receiver, _token_id, inttouint(y), expire_time, _cancel_time);
 }

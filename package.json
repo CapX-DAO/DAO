@@ -1,0 +1,22 @@
+{
+  "name": "dao-test",
+  "version": "1.0.0",
+  "description": "Install truffle framework and connect to ganache to run the tests for the code.",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CapX-DAO/DAO.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CapX-DAO/DAO/issues"
+  },
+  "homepage": "https://github.com/CapX-DAO/DAO#readme"
+}

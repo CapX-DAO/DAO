@@ -1,19 +1,19 @@
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
-//import ERC20 token
+import "../dependencies/open-zeppelin/ERC20.sol";
 
 
 interface VeDelegation {
     function adjusted_balance_of(address _account) external view returns (uint256);
 }
 
-interface ERC20 {
-    function balanceOf(address _owner) external view returns (uint256);
-    function transfer(address _to, uint256 _value) external returns (bool);
-    function allowance(address _owner, address _spender) external view returns (uint256);
-    function transferFrom(address _from, address _to, uint256 _value) external returns (bool);
-}
+// interface ERC20 {
+//     function balanceOf(address _owner) external view returns (uint256);
+//     function transfer(address _to, uint256 _value) external returns (bool);
+//     function allowance(address _owner, address _spender) external view returns (uint256);
+//     function transferFrom(address _from, address _to, uint256 _value) external returns (bool);
+// }
 
 contract Delegation{
   event CommitAdmins(address ownership_admin, address emergency_admin);
@@ -24,10 +24,16 @@ contract Delegation{
   event DelegationSet(address delegation);
 
 
-  address constant VOTING_ESCROW = 0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2;
+  // using the address of VotingEscrow's smart contract deployed on ganache for now. Will have to change once contract is actually deployed
+
+// this is the contract of votingescrow contract
+
+// change this according voting escrow deployment
+  address constant VOTING_ESCROW = 0x9F70CE975BF148Dd14bA3093Aec912E0c592126B;
   address constant ZERO_ADDRESS = address(0);
 
 
+// can set the address of the votingescrow delegation contract
   address public delegation;
 
 
@@ -37,8 +43,20 @@ contract Delegation{
   address public future_ownership_admin;
 
 
+  function getOwnershipAdmin() public view returns (address) {
+    return ownership_admin;
+  }
 
-  function __init__(address _delegation, address _o_admin,address _e_admin) public {
+  function getEmergencyAdmin() public view returns (address) {
+    return emergency_admin;
+  }
+
+  function getDelegation() public view returns (address) {
+    return delegation;
+  }
+
+
+  function __init__ (address _delegation, address _o_admin,address _e_admin) public {
     delegation = _delegation;
 
     ownership_admin = _o_admin;
@@ -83,7 +101,7 @@ contract Delegation{
 
 
   function commit_set_admins(address  _o_admin,address  _e_admin) public {
-    require(msg.sender == _o_admin);
+    require(msg.sender == ownership_admin);
 
     future_ownership_admin = _o_admin;
     future_emergency_admin = _e_admin;

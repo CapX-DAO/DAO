@@ -186,7 +186,7 @@ address future_admin;
   }
 
   function assert_not_contract(address addr) private {
-    if (addr != tx.origin){
+    if (addr != msg.sender){
       address checker = smart_wallet_checker;
       if (checker != address(0)){
         require(SmartWalletChecker(checker).check(addr) , "Smart contract depositors not allowed");

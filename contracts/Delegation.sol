@@ -24,7 +24,7 @@ contract Delegation{
   event DelegationSet(address delegation);
 
 
-  // using the address of VotingEscrow's smart contract deployed on ganache for now. Will have to change once contract is actually deployed
+
 
 // this is the contract of votingescrow contract
 
@@ -92,7 +92,7 @@ contract Delegation{
     require(msg.sender == ownership_admin);
 
     // call `adjusted_balance_of` to make sure it works
-    VeDelegation(_delegation).adjusted_balance_of(msg.sender);
+    // VeDelegation(_delegation).adjusted_balance_of(msg.sender);
 
     delegation = _delegation;
     emit DelegationSet(_delegation);

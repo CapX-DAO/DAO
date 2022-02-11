@@ -20,17 +20,17 @@ contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver]) => {
 
         it('Check the name of the token', async() => {
             const result = await token.name();
-            assert(result === "CAPX Token");
+            assert(result === name);
         })
 
         it('Check the symbol of the token', async() => {
             const result = await token.symbol();
-            assert(result === "CAPX");
+            assert(result === symbol);
         })
 
         it('Check the decimals', async() => {
             const result = await token.decimals();
-            assert(result.toNumber() === 18);
+            assert(result.toString() === decimals);
         })
 
         it('Check the total supply', async() => {
@@ -57,8 +57,6 @@ contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver]) => {
             const result1 = await token.totalSupply()
             assert(result.toNumber() != result1.toNumber && result1.toNumber() - result.toNumber() == 100)
         })
-    });
-
 
         it('checks the amount of tokens that an owner is allowed to a spender', async() => {
             // allowance() function
@@ -67,6 +65,32 @@ contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver]) => {
 
             assert(result.toNumber() == 20, "Function is not working correctly");
         })
+    });
+
+    describe('mining parameters', () => {
+        let result
+        let timestamp
+        let rate
+        let start_epoch_supply
+        beforeEach(async () => {
+            timestamp = await token.get_block_timestamp()
+            rate = await token.rate()
+            start_epoch_supply = await token.start_epoch_time_write()
+            result = await token.update_mining_parameters()
+            
+        })
+        it('emits an UpdateMiningParameters event', async () => {
+            const log = result.logs[0]
+            assert.strictEqual(log.event === 'UpdateMiningParameters')
+            const event = log.args
+            assert.strictEqual(event.time.toString() == timestamp.toString())
+            assert.strictEqual(event.rate.toString() == rate.toString())
+            assert.strictEqual(event.supply.toString() == start_epoch_supply.toString())
+        })
+    })
+
+
+        
 
 
 

@@ -93,6 +93,62 @@ contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver, minter]) => {
         })
     })
 
+    describe('epoch time', () => {
+        it('returns start_epoch_time', async () => {
+            result = await token.start_epoch_time_write.call()
+            start_epoch_time = await token.start_epoch_time()
+            
+            assert(result.toString() == start_epoch_time.toString())
+            
+        })
+
+        it('emits an UpdateMiningParameters event from start_epoch_time_write', async () => {
+            advancement = 86400 * 730 // 2 year 
+            await helper.advanceTimeAndBlock(advancement);
+
+            result = await token.start_epoch_time_write()
+            timestamp = await token.get_block_timestamp()
+            rate = await token.rate()
+            start_epoch_supply = await token.start_epoch_supply()
+            
+            const log = result.logs[0]
+            console.log(log.event)
+            assert(log.event.toString() === 'UpdateMiningParameters')
+            const event = log.args
+            assert(event.time.toString() == timestamp.toString())
+            assert(event.rate.toString() == rate.toString())
+            assert(event.supply.toString() == start_epoch_supply.toString())
+        })
+
+        it('returns future_epoch_time', async () => {
+            result = await token.future_epoch_time_write.call()
+            future_epoch_time = await token.start_epoch_time()
+            future_epoch_time = future_epoch_time.toNumber()
+            future_epoch_time += 86400*365
+
+            assert(result.toString() == future_epoch_time.toString())
+            
+        })
+
+        it('emits an UpdateMiningParameters event from future_epoch_time_write', async () => {
+            advancement = 86400 * 730 // 2 year 
+            await helper.advanceTimeAndBlock(advancement);
+
+            result = await token.future_epoch_time_write()
+            timestamp = await token.get_block_timestamp()
+            rate = await token.rate()
+            start_epoch_supply = await token.start_epoch_supply()
+            
+            const log = result.logs[0]
+            console.log(log.event)
+            assert(log.event.toString() === 'UpdateMiningParameters')
+            const event = log.args
+            assert(event.time.toString() == timestamp.toString())
+            assert(event.rate.toString() == rate.toString())
+            assert(event.supply.toString() == start_epoch_supply.toString())
+        })
+    })
+
 
     describe('tests related to transfer', () => {
         it('checks if user can transfer token to another user', async() => {

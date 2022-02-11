@@ -54,7 +54,7 @@ contract ERC20CRV is IERC20, IERC20Metadata{
     uint256 public start_epoch_time;
     uint256 public rate;
 
-    uint256 start_epoch_supply;
+    uint256 public start_epoch_supply;
 
 
 
@@ -153,7 +153,7 @@ contract ERC20CRV is IERC20, IERC20Metadata{
         //     @notice Update mining rate and supply at the start of the epoch
         //     @dev Callable by any address, but only once per epoch
         //         Total supply becomes slightly larger if this function is called late
-        require(block.timestamp >= start_epoch_time + RATE_REDUCTION_TIME, "too soon!");
+        require(block.timestamp >= start_epoch_time + RATE_REDUCTION_TIME, "too soon!"); // this is always resulting in false
         _update_mining_parameters();
     }
 

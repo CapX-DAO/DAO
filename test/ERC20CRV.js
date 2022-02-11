@@ -1,4 +1,5 @@
 const ERC20CRV = artifacts.require('ERC20CRV');
+const helper = require('../utils');
 
 contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver, minter]) => {
 
@@ -67,27 +68,30 @@ contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver, minter]) => {
         })
     });
 
-    // describe('mining parameters', () => {
-    //     let result
-    //     let timestamp
-    //     let rate
-    //     let start_epoch_supply
-    //     beforeEach(async () => {
-    //         timestamp = await token.get_block_timestamp()
-    //         rate = await token.rate()
-    //         start_epoch_supply = await token.start_epoch_time_write()
-    //         result = await token.update_mining_parameters()
+    describe('mining parameters', () => {
+        let result
+        let timestamp
+        let rate
+        let start_epoch_supply
+        
+        it('emits an UpdateMiningParameters event', async () => {
+            advancement = 86400 * 730 // 2 year 
+            await helper.advanceTimeAndBlock(advancement);
+
+            result = await token.update_mining_parameters()
+            timestamp = await token.get_block_timestamp()
+            rate = await token.rate()
+            start_epoch_supply = await token.start_epoch_supply()
             
-    //     })
-    //     it('emits an UpdateMiningParameters event', async () => {
-    //         const log = result.logs[0]
-    //         assert.strictEqual(log.event === 'UpdateMiningParameters')
-    //         const event = log.args
-    //         assert.strictEqual(event.time.toString() == timestamp.toString())
-    //         assert.strictEqual(event.rate.toString() == rate.toString())
-    //         assert.strictEqual(event.supply.toString() == start_epoch_supply.toString())
-    //     })
-    // })
+            const log = result.logs[0]
+            console.log(log.event)
+            assert(log.event.toString() === 'UpdateMiningParameters')
+            const event = log.args
+            assert(event.time.toString() == timestamp.toString())
+            assert(event.rate.toString() == rate.toString())
+            assert(event.supply.toString() == start_epoch_supply.toString())
+        })
+    })
 
 
     describe('tests related to transfer', () => {
@@ -161,7 +165,7 @@ contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver, minter]) => {
     })
 
     describe('Set minter', async() => {
-        it('checks if the user is the admin', async() => {
+        it('checks that the minter is only set once', async() => {
             const admin = await token.get_admin();
             assert(admin.toString() === deployer.toString(), "You are not the admin");
             const current_minter = await token.get_minter();

@@ -1,6 +1,6 @@
 const ERC20CRV = artifacts.require('ERC20CRV');
 
-contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver]) => {
+contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver, minter]) => {
 
     let token;
     
@@ -67,31 +67,27 @@ contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver]) => {
         })
     });
 
-    describe('mining parameters', () => {
-        let result
-        let timestamp
-        let rate
-        let start_epoch_supply
-        beforeEach(async () => {
-            timestamp = await token.get_block_timestamp()
-            rate = await token.rate()
-            start_epoch_supply = await token.start_epoch_time_write()
-            result = await token.update_mining_parameters()
+    // describe('mining parameters', () => {
+    //     let result
+    //     let timestamp
+    //     let rate
+    //     let start_epoch_supply
+    //     beforeEach(async () => {
+    //         timestamp = await token.get_block_timestamp()
+    //         rate = await token.rate()
+    //         start_epoch_supply = await token.start_epoch_time_write()
+    //         result = await token.update_mining_parameters()
             
-        })
-        it('emits an UpdateMiningParameters event', async () => {
-            const log = result.logs[0]
-            assert.strictEqual(log.event === 'UpdateMiningParameters')
-            const event = log.args
-            assert.strictEqual(event.time.toString() == timestamp.toString())
-            assert.strictEqual(event.rate.toString() == rate.toString())
-            assert.strictEqual(event.supply.toString() == start_epoch_supply.toString())
-        })
-    })
-
-
-        
-
+    //     })
+    //     it('emits an UpdateMiningParameters event', async () => {
+    //         const log = result.logs[0]
+    //         assert.strictEqual(log.event === 'UpdateMiningParameters')
+    //         const event = log.args
+    //         assert.strictEqual(event.time.toString() == timestamp.toString())
+    //         assert.strictEqual(event.rate.toString() == rate.toString())
+    //         assert.strictEqual(event.supply.toString() == start_epoch_supply.toString())
+    //     })
+    // })
 
 
     describe('tests related to transfer', () => {
@@ -161,6 +157,19 @@ contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver]) => {
             const result = await token.burn(3);
             const newCurrentTotalSupply = await token.totalSupply();
             assert(newCurrentTotalSupply <= currentTotalSupply);
+        })
+    })
+
+    describe('Set minter', async() => {
+        it('checks if the user is the admin', async() => {
+            const admin = await token.get_admin();
+            assert(admin.toString() === deployer.toString(), "You are not the admin");
+            const current_minter = await token.get_minter();
+            //console.log(current_minter)
+            assert(current_minter.toString() === '0x0000000000000000000000000000000000000000', "Minter can only be set once");
+            await token.set_minter(minter);
+            let new_minter = await token.get_minter();
+            assert(new_minter.toString() === minter.toString(), "Function not working correctly");
         })
     })
         

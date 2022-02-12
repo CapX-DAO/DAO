@@ -112,7 +112,6 @@ contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver, minter]) => {
             start_epoch_supply = await token.start_epoch_supply()
             
             const log = result.logs[0]
-            console.log(log.event)
             assert(log.event.toString() === 'UpdateMiningParameters')
             const event = log.args
             assert(event.time.toString() == timestamp.toString())
@@ -146,6 +145,30 @@ contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver, minter]) => {
             assert(event.time.toString() == timestamp.toString())
             assert(event.rate.toString() == rate.toString())
             assert(event.supply.toString() == start_epoch_supply.toString())
+        })
+    })
+
+    describe('available supply', () => {
+        let result
+        let timestamp
+        let rate
+        let start_epoch_supply
+        let available_supply
+        
+        it('returns the available supply', async () => {
+            advancement = 86400 * 730 // 2 year 
+            await helper.advanceTimeAndBlock(advancement);
+
+            result = await token.available_supply.call()
+            timestamp = await token.get_block_timestamp()
+            timestamp = timestamp.toNumber()
+            rate = await token.rate()
+            rate = rate.toNumber()
+            start_epoch_supply = await token.start_epoch_supply()
+            start_epoch_supply = start_epoch_supply.toNumber()
+            available_supply = start_epoch_supply + (timestamp - start_epoch_time) * rate
+            
+            assert(result.toString() === available_supply.toString())
         })
     })
 

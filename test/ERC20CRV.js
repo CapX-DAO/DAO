@@ -171,6 +171,32 @@ contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver, minter]) => {
             assert(result.toString() === available_supply.toString())
         })
     })
+    describe('mintable in time frame', () => {
+        let result
+        let start
+        let end
+
+        beforeEach(async () => {
+            start = await token.get_block_timestamp()
+            advancement = 86400 * 365 
+            await helper.advanceTimeAndBlock(advancement);
+            end = await token.get_block_timestamp()
+
+            result = await token.mintable_in_timeframe.call(start, end)
+
+        })
+        it('checks current_epoch_time and current_rate', async () => {
+            console.log(start)
+            console.log(end)
+            // rate = await token.rate()
+            // rate = rate.toNumber()
+            // start_epoch_supply = await token.start_epoch_supply()
+            // start_epoch_supply = start_epoch_supply.toNumber()
+            console.log(result.toString())
+            
+
+        })
+    })
 
 
     describe('tests related to transfer', () => {

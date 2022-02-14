@@ -140,9 +140,6 @@ address future_admin;
     version = _version;
   }
 
-  // function get_block_number() public view returns (uint256) {
-  //   return block.number;
-  // }
 
   function get_block_number() public view returns (uint256) {
     return block.number;
@@ -150,6 +147,10 @@ address future_admin;
 
   function get_admin() public view returns (address) {
     return admin;
+  }
+
+  function get_controller() public view returns (address) {
+    return controller;
   }
 
   function get_smart_wallet_checker() public view returns (address){
@@ -346,10 +347,6 @@ address future_admin;
         u_new.blk = block.number;
         user_point_history[addr][_epoch] = u_new;
     }
-  }
-
-  function debugger(uint256 _value) public pure returns (int128) {
-    return SafeCast.toInt128(uinttoint(_value)) / SafeCast.toInt128(uinttoint(MAXTIME));
   }
 
   function _deposit_for(address _addr ,uint256 _value, uint256 unlock_time, LockedBalance memory locked_balance,int128 _type) private {
@@ -651,7 +648,7 @@ address future_admin;
     return inttouint(last_point.bias);
   }
 
-  function totalSupply(uint256 t) public view returns(uint256) {
+  function totalSupplyAtEpoch(uint256 t) public view returns(uint256) {
     // """
     // @notice Calculate total voting power
     // @dev Adheres to the ERC20 `totalSupply` interface for Aragon compatibility

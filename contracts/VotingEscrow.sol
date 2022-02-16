@@ -12,9 +12,6 @@ import {SignedSafeMath} from "../dependencies/open-zeppelin/SignedSafeMath.sol";
         committed to the future of (whatever they are voting for)
 @dev Vote weight decays linearly over time. Lock time cannot be
      more than `MAXTIME` (4 years).
-
-
-
 // Voting escrow to have time-weighted votes
 // Votes have a weight depending on time, so that users are committed
 // to the future of (whatever they are voting for).

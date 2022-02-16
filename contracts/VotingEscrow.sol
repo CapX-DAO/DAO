@@ -79,6 +79,8 @@ event Withdraw(address indexed provider, uint256 value, uint256 ts);
 
 event Supply(uint256 prevSupply, uint256 supply);
 
+event debugger(uint256 blknum);
+
 uint256 constant WEEK = 7 * 86400;  
 uint256 constant MAXTIME= 4 * 365 * 86400;
 uint256 constant MULTIPLIER = 10 ** 18;
@@ -90,6 +92,7 @@ mapping(uint256 => Point) point_history;
 mapping(address => mapping(uint256 => Point)) user_point_history;
 mapping(address => uint256) user_point_epoch;
 mapping(uint256 => int128) slope_changes;
+mapping(address => mapping(address => LockedBalance)) delegations;
 
 address controller;
 bool transfersEnabled;
@@ -144,21 +147,21 @@ address future_admin;
   //   return block.number;
   // }
 
-  function get_block_number() public view returns (uint256) {
-    return block.number;
-  }
+  // function get_block_number() public view returns (uint256) {
+  //   return block.number;
+  // }
 
-  function get_admin() public view returns (address) {
-    return admin;
-  }
+  // function get_admin() public view returns (address) {
+  //   return admin;
+  // }
 
-  function get_smart_wallet_checker() public view returns (address){
-    return smart_wallet_checker;
-  }
+  // function get_smart_wallet_checker() public view returns (address){
+  //   return smart_wallet_checker;
+  // }
 
-  function get_block_timestamp() public view returns (uint256){
-    return block.timestamp;
-  }
+  // function get_block_timestamp() public view returns (uint256){
+  //   return block.timestamp;
+  // }
 
   function commit_transfer_ownership(address addr) public {
     require(msg.sender == admin, "Only admin can commit transfer ownership");
@@ -348,9 +351,7 @@ address future_admin;
     }
   }
 
-  function debugger(uint256 _value) public pure returns (int128) {
-    return SafeCast.toInt128(uinttoint(_value)) / SafeCast.toInt128(uinttoint(MAXTIME));
-  }
+
 
   function _deposit_for(address _addr ,uint256 _value, uint256 unlock_time, LockedBalance memory locked_balance,int128 _type) private {
     // """
@@ -371,17 +372,16 @@ address future_admin;
         _locked.end = unlock_time;
     }
     locked[_addr] = _locked;
-    
+
+    if (_value != 0) {
+        require(ERC20(token).transferFrom(_addr, address(this), _value));
+    }    
+
     // Possibilities:
     // Both old_locked.end could be current or expired (>/< block.timestamp)
     // value == 0 (extend lock) or value > 0 (add to lock or extend lock)
     // _locked.end > block.timestamp (always)
     _checkpoint(_addr, old_locked, _locked);
-
-    if (_value != 0) {
-        require(ERC20(token).transferFrom(_addr, address(this), _value));
-    }
-
     emit Deposit(_addr, _value, _locked.end, _type, block.timestamp);
     emit Supply(supply_before, supply_before + _value);
   }
@@ -412,7 +412,7 @@ address future_admin;
     _deposit_for(_addr, _value, 0, locked[_addr], SafeCast.toInt128(uinttoint(DEPOSIT_FOR_TYPE)));
   }
 
-  function create_lock(uint256 _value, uint256 _unlock_time) public nonReentrant {
+  function create_lock(uint256 _value, uint256 _unlock_time) public nonReentrant returns (uint256) {
     // """
     // @notice Deposit `_value` tokens for `msg.sender` and lock until `_unlock_time`
     // @param _value Amount to deposit
@@ -422,12 +422,20 @@ address future_admin;
     uint256 unlock_time = (_unlock_time / WEEK) * WEEK; // Locktime is rounded down to weeks
     LockedBalance memory _locked = locked[msg.sender];
 
+
+    
+    
+
     require(_value > 0,"need non-zero value");
     require(_locked.amount == 0, "Withdraw old tokens first");
     require(unlock_time > block.timestamp, "Can only lock until time in the future");
     require(unlock_time <= block.timestamp + MAXTIME, "Voting lock can be 4 years max");
 
+    emit debugger(block.number);
+
     _deposit_for(msg.sender, _value, unlock_time, _locked, CREATE_LOCK_TYPE);
+
+    return block.number;
   }
 
   function increase_amount(uint256 _value) public nonReentrant {

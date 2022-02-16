@@ -18,5 +18,9 @@
   "bugs": {
     "url": "https://github.com/CapX-DAO/DAO/issues"
   },
-  "homepage": "https://github.com/CapX-DAO/DAO#readme"
+  "homepage": "https://github.com/CapX-DAO/DAO#readme",
+  "dependencies": {
+    "solhint": "^3.3.6",
+    "truffle-contract-size": "^2.0.1"
+  }
 }

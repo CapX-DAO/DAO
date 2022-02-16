@@ -1,2 +1,7 @@
-build/
-node_modules/
+node_modules
+/build
+/coverage
+/contracts/.DS_Store
+.DS_Store
+.openzeppelin/
+package-lock.json

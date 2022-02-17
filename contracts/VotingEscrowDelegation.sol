@@ -393,7 +393,7 @@ function _burn_boost(uint256 _token_id,address _delegator,address _receiver) ext
             // we essentially allow for a boost token be expired for up to 6 years
             // 10 yrs - 4 yrs (max vecRV lock time) = ~ 6 yrs
             if (i == 512) {
-                require(false ,"Failed to find next expiry") ;
+                require(false,"Failed to find next expiry");
             }
             uint256 week_ts = expire_time + Utils.WEEK * (i + 1);
             if (account_expiries[_delegator][week_ts] > 0) {

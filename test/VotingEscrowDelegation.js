@@ -10,14 +10,15 @@
 //     let value = 126144001
 //     let result;
 //     let id;
+//     let cancel_time
 //     let unlock_time = new Date();
 //     unlock_time.setDate(unlock_time.getDate() + 100);
 //     unlock_time = parseInt(unlock_time.getTime() / 1000);
 
 //     beforeEach(async() => {
-//         // token = await ERC20CRV.new("CAPX Token", "CAPX", 18);
-//         // escrow = await VotingEscrow.new(token.address, "CAPX Token", "CAPX", "1.0")
-//         vedel = await VEDelegation.new("CAPX Token", "CAPX", "base_uri");
+//         token = await ERC20CRV.new("Token", "TOK", 18);
+//         escrow = await VotingEscrow.new(token.address, "Token", "TOK", "1.0")
+//         vedel = await VEDelegation.new("Token", "TOK", "base_uri");
 //     })
 
 //     describe("Check if contract is able to deploy", async() => {
@@ -25,30 +26,30 @@
 //     })
 
 //     describe("Check if able to create boost", async() => {
-//         // await token.approve(escrow.address , 126144001);
-//         // await escrow.create_lock(value, unlock_time);
+//         await token.approve(escrow.address , 126144001);
+//         await escrow.create_lock(value, unlock_time);
+//         cancel_time = unlock_time - 10000
 //         id = 10;
-//         await vedel.create_boost(delegator, receiver, 20, 16762100, 16762200, 10, {from : delegator})
+//         await vedel.create_boost(deployer, receiver, 20, cancel_time, unlock_time, 10, {from : deployer})
 //     })
 
 //     describe("Functions related to boost", async() => {
 //         beforeEach(async() => {
-//             // await token.approve(escrow.address , 126144001);
-//             // await escrow.create_lock(value, unlock_time);
+//             await token.approve(escrow.address , 126144001);
+//             await escrow.create_lock(value, unlock_time);
 //             id = 10;
-//             await vedel.create_boost(delegator, receiver, 20, 16762100, 16762200, 10, {from : deployer})
+//             await vedel.create_boost(deployer, receiver, 20, cancel_time, unlock_time, 10, {from : deployer})
 //         })
 
 //         // don't know what value of token_id to put
 //         it('Extends boost amount', async() => {
-//             let token_id = await vedel.get_token_id(delegator, 10);
-//             // await vedel.burn(token_id);
+//             let token_id = await vedel.get_token_id(deployer, 10);
 //             await vedel.extend_boost(token_id, 50, 16762150, 16762250)
 //         })
 
 //         it('Cancels boost that was delegated', async() => {
 //             //cancel_boost
-//             let token_id = await vedel.get_token_id(delegator, 10)
+//             let token_id = await vedel.get_token_id(deployer, 10)
 //             await vedel.cancel_boost(token_id);
 
 //         })
@@ -57,14 +58,14 @@
 //             // adjusted_balance_of
 //             // can be any address
 //             let address = delegator;
-//             value = vedel.adjusted_balance_of(delegator)
+//             value = vedel.adjusted_balance_of(deployer)
 //             console.log(value);
 
 //         })
 
 //         it('calculates the total delegated boost of an account', async() => {
 //             // delegated_boost
-//             value = await vedel.delegated_boost(delegator);
+//             value = await vedel.delegated_boost(deployer);
 //             console.log(value.toString());
 
 //         })
@@ -77,19 +78,19 @@
 
 //         it('calculates the total value of a boost', async() => {
 //             // token_boost
-//             id = await vedel.get_token_id(delegator, 10);
+//             id = await vedel.get_token_id(deployer, 10);
 //             result = await vedel.token_boost(id);
 //             console.log(result.toString());
 //         })
 
 //         it('calculates the token expiry of a boost', async() => {
-//             id = await vedel.get_token_id(delegator, 10);
+//             id = await vedel.get_token_id(deployer, 10);
 //             result = await vedel.token_expiry(id);
 //             console.log(result.toString());
 //         })
 
 //         it('calculates the token cancel time of a boost', async() => {
-//             id = await vedel.get_token_id(delegator, 10);
+//             id = await vedel.get_token_id(deployer, 10);
 //             result = await vedel.token_cancel_time(id);
 //             console.log(result.toString())
 //         })

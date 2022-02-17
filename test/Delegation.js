@@ -1,19 +1,19 @@
 // const Delegation = artifacts.require('Delegation');
 // const VotingEscrow = artifacts.require('VotingEscrow');
 // const ERC20CRV = artifacts.require('ERC20CRV');
-// // const VotingEscrowDelegation = artifacts.require('VotingEscrowDelegation');
+// const VotingEscrowDelegation = artifacts.require('VotingEscrowDelegation');
 
 // contract('Delegation', ([deployer, delegator, ownership_admin, emergency_admin, receiver, test_user, future_ownership_admin, future_emergency_admin]) => {
 
 //     let del; 
-//     let vedel = 0x0000000000000000000000000000000000000000; // setting zero address until we get the deployed address
+//     let vedel 
 //     let escrow;
 //     let value, result;
 //     beforeEach(async() => {
 
-//         // vedel = await VotingEscrowDelegation.new("CAPX Token", "CAPX", "base_uri")
+//         vedel = await VotingEscrowDelegation.new("Token", "TOK", "base_uri")
 //         del = await Delegation.new();
-//         escrow = await VotingEscrow.new(ERC20CRV.address, "CAPX Token", "CAPX", "1.0")
+//         escrow = await VotingEscrow.new(ERC20CRV.address, "Token", "TOK", "1.0")
 //     })
 
 //     describe('check for deployment', async() => {

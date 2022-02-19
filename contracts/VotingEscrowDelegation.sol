@@ -15,11 +15,356 @@ pragma solidity ^0.8.4;
 //     ) -> bytes32:
 //         nonpayable
 
-import {Utils} from './Utils.sol';
-import "./VEDinterfaces.sol";
+import {Utils} from "../dependencies/open-zeppelin/Utils.sol";
+
+interface VE {
+    function balanceOf(address _account) external view returns (uint256);
+    function locked__end(address _addr) external view returns (uint256);
+}
+
+interface Utilsdel {
+    struct slice {
+        uint _len;
+        uint _ptr;
+    }
+    
+    function uinttoint(uint num) external pure returns (int) ;
+function inttouint(int num) external pure returns (uint) ;
+function timechecker(uint256 _expiry_time,uint256 _cancel_time,address delegator,address VOTING_ESCROW) external view returns (uint256) ;
+function memcpy(uint dest, uint src, uint len) external pure ;
+function toSlice(string memory a) external pure returns (slice memory) ;
+function concat(string memory a, string memory b) external pure returns (string memory) ;
+function shift(uint256 _x, int256 _n) external pure returns (uint256) ;
+function shift(int256 _x, int256 _n) external pure returns (int256) ;
+function _uint_to_string(uint256 _x) external pure returns (string memory) ;
+function _deconstruct_bias_slope(uint256 _data) external pure returns (VotingEscrowDelegation.Point memory) ;
+function _calc_bias_slope(int256 _x,int256 _y,int256 _expire_time) external pure returns (VotingEscrowDelegation.Point memory) ;
+function max(uint256 a, uint256 b) external pure returns (uint256) ;
+function max(int256 a, int256 b) external pure returns (int256) ;
+function abs(int256 a) external pure returns (int256) ;
+function get_token_id(address _delegator , uint256 _id) external pure returns (uint256) ;
+function is_contract(address _addr) external view returns (bool isContract);
+function received_boost(uint256 boost_recieved) external view returns (uint256) ;
+function _is_approved_or_owner(address _spender,address owner_of_token_id, address get_approved_token_id , bool isapprovedforall_owner_spender) external pure ;
+function adjusted_balance_of(address _account, VotingEscrowDelegation.Boost memory boost_account,address VOTING_ESCROW) external view returns (uint256);
+function ycalc(address _delegator,VotingEscrowDelegation.Point memory point, int256 _percentage,address VOTING_ESCROW) external view returns (int256) ;
+function delegated_boost(address _account,VotingEscrowDelegation.Boost memory boost_account) external view returns (uint256) ;
+function calc_boost_bias_slope(
+    address _delegator,
+    int256 _percentage,
+    int256 _expire_time,
+    uint256 _extend_token_id,
+    uint256 boost_delegator_delegated,
+    uint256 boost_tokens_extend_token_id_data,address VOTING_ESCROW
+) external view returns (VotingEscrowDelegation.Point memory);
+function token_boost(uint256 _token_id,address VOTING_ESCROW_DELEGATION) external view returns (int256) ;
+function token_expiry(uint256 _token_id,address VOTING_ESCROW_DELEGATION) external view returns (uint256) ;
+function token_cancel_time(uint256 _token_id,address VOTING_ESCROW_DELEGATION) external view returns (uint256) ;
+}
 
 
-contract VotingEscrowDelegation is VED {
+import {SafeCast} from '../dependencies/open-zeppelin/SafeCast.sol';
+
+
+contract VotingEscrowDelegation {
+
+    address constant public ZERO_ADDRESS = address(0);
+    uint256 constant MAX_PCT = 10_000;
+uint256 constant WEEK = 86400 * 7;
+// address constant VOTING_ESCROW = 0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2;
+// address constant VOTING_ESCROW_DELEGATION = 0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2;
+uint256 constant MAX_UINT256 = 2**256 - 1;
+
+    event Approval(
+    address _owner,
+    address _approved,
+    uint256 _token_id
+);
+
+
+
+
+// event ApprovalForAll:
+//     _owner: indexed(address)
+//     _operator: indexed(address)
+//     _approved: bool
+
+event ApprovalForAll(
+    address _owner,
+    address _operator,
+    bool _approved
+);
+
+// event Transfer:
+//     _from: indexed(address)
+//     _to: indexed(address)
+//     _token_id: indexed(uint256)
+
+event Transfer(
+    address _from,
+    address _to,
+    uint256 _token_id
+);
+
+// event BurnBoost:
+//     _delegator: indexed(address)
+//     _receiver: indexed(address)
+//     _token_id: indexed(uint256)
+
+event BurnBoost(
+    address _delegator,
+    address _receiver,
+    uint256 _token_id
+);
+
+// event DelegateBoost:
+//     _delegator: indexed(address)
+//     _receiver: indexed(address)
+//     _token_id: indexed(uint256)
+//     _amount: uint256
+//     _cancel_time: uint256
+//     _expire_time: uint256
+
+event DelegateBoost(
+    address _delegator,
+    address _receiver,
+    uint256 _token_id,
+    uint256 _amount,
+    uint256 _cancel_time,
+    uint256 _expire_time
+);
+
+// event ExtendBoost:
+//     _delegator: indexed(address)
+//     _receiver: indexed(address)
+//     _token_id: indexed(uint256)
+//     _amount: uint256
+//     _expire_time: uint256
+//     _cancel_time: uint256
+
+event ExtendBoost(
+    address _delegator,
+    address _receiver,
+    uint256 _token_id,
+    uint256 _amount,
+    uint256 _expire_time,
+    uint256 _cancel_time
+);
+
+// event TransferBoost:
+//     _from: indexed(address)
+//     _to: indexed(address)
+//     _token_id: indexed(uint256)
+//     _amount: uint256
+//     _expire_time: uint256
+
+event TransferBoost(
+    address _from,
+    address _to,
+    uint256 _token_id,
+    uint256 _amount,
+    uint256 _expire_time
+);
+
+// event GreyListUpdated:
+//     _receiver: indexed(address)
+//     _delegator: indexed(address)
+//     _status: bool
+
+event GreyListUpdated(
+    address _receiver,
+    address _delegator,
+    bool _status
+);
+
+
+    struct Boost {
+    // [bias uint128][slope int128]
+    uint256 delegated;
+    uint256 received;
+    // [total active delegations 128][next expiry 128]
+    uint256 expiry_data;
+}
+
+// struct Token:
+//     # [bias uint128][slope int128]
+//     data: uint256
+//     # [delegator pos 128][cancel time 128]
+//     dinfo: uint256
+//     # [global 128][local 128]
+//     position: uint256
+//     expire_time: uint256
+
+struct Token {
+    // [bias uint128][slope int128]
+    uint256 data;
+    // [delegator pos 128][cancel time 128]
+    uint256 dinfo;
+    // [global 128][local 128]
+    uint256 position;
+    uint256 expire_time;
+}
+
+// struct Point:
+//     bias: int256
+//     slope: int256
+
+struct Point {
+    int256 bias;
+    int256 slope;
+}
+
+
+
+// struct Boost:
+//     # [bias uint128][slope int128]
+//     delegated: uint256
+//     received: uint256
+//     # [total active delegations 128][next expiry 128]
+//     expiry_data: uint256
+
+    
+// IDENTITY_PRECOMPILE: constant(address) = 0x0000000000000000000000000000000000000004
+// MAX_PCT: constant(uint256) = 10_000
+// WEEK: constant(uint256) = 86400 * 7
+// VOTING_ESCROW: constant(address) = 0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2
+
+address public VOTING_ESCROW;
+address public utils;
+
+
+
+// balanceOf: public(HashMap[address, uint256])
+// getApproved: public(HashMap[uint256, address])
+// isApprovedForAll: public(HashMap[address, HashMap[address, bool]])
+// ownerOf: public(HashMap[uint256, address])
+
+
+
+// name: public(String[32])
+// symbol: public(String[32])
+// base_uri: public(String[128])
+
+string public name;
+string public symbol;
+string public base_uri;
+
+// totalSupply: public(uint256)
+// # use totalSupply to determine the length
+// tokenByIndex: public(HashMap[uint256, uint256])
+// # use balanceOf to determine the length
+// tokenOfOwnerByIndex: public(HashMap[address, uint256[MAX_UINT256]])
+
+uint256 public totalSupply;
+// use totalSupply to determine the length
+mapping(uint256 => uint256) public tokenByIndex;
+// use balanceOf to determine the length
+mapping(address => mapping(uint256 => uint256)) public tokenOfOwnerByIndex;
+
+mapping(address => Boost) public boost;
+mapping(uint256 => Token) public boost_tokens;
+
+// boost: HashMap[address, Boost]
+// boost_tokens: HashMap[uint256, Token]
+
+
+
+// token_of_delegator_by_index: public(HashMap[address, uint256[MAX_UINT256]])
+// total_minted: public(HashMap[address, uint256])
+// # address => timestamp => # of delegations expiring
+// account_expiries: public(HashMap[address, HashMap[uint256, uint256]])
+
+mapping(address => mapping(uint256 => uint256)) public token_of_delegator_by_index;
+mapping(address => uint256) public total_minted;
+// address => timestamp => # of delegations expiring
+mapping(address => mapping(uint256 => uint256)) public account_expiries;
+
+// admin: public(address)  # Can and will be a smart contract
+// future_admin: public(address)
+
+address public admin; // Can and will be a smart contract
+address public future_admin;
+
+// # The grey list - per-user black and white lists
+// # users can make this a blacklist or a whitelist - defaults to blacklist
+// # gray_list[_receiver][_delegator]
+// # by default is blacklist, with no delegators blacklisted
+// # if [_receiver][ZERO_ADDRESS] is False = Blacklist, True = Whitelist
+// # if this is a blacklist, receivers disallow any delegations from _delegator if it is True
+// # if this is a whitelist, receivers only allow delegations from _delegator if it is True
+// # Delegation will go through if: not (grey_list[_receiver][ZERO_ADDRESS] ^ grey_list[_receiver][_delegator])
+// grey_list: public(HashMap[address, HashMap[address, bool]])
+
+// The grey list - per-user black and white lists
+// users can make this a blacklist or a whitelist - defaults to blacklist
+// gray_list[_receiver][_delegator]
+// by default is blacklist, with no delegators blacklisted
+// if [_receiver][ZERO_ADDRESS] is False = Blacklist, True = Whitelist
+// if this is a blacklist, receivers disallow any delegations from _delegator if it is True
+// if this is a whitelist, receivers only allow delegations from _delegator if it is True
+// Delegation will go through if: not (grey_list[_receiver][ZERO_ADDRESS] ^ grey_list[_receiver][_delegator])
+mapping(address => mapping(address => bool)) public grey_list;
+
+function get_boost_token_data(uint256 _token_id) public view returns (uint256) {
+    return boost_tokens[_token_id].data;
+}
+
+function transfer_boost_permission(address _to , address delegator) internal view {
+    uint256 is_whitelist = (grey_list[_to][ZERO_ADDRESS] ? 1 : 0);
+    uint256 delegator_status = (grey_list[_to][delegator] ? 1 : 0);
+    require(((is_whitelist ^ delegator_status) == 0),"transfer boost not allowed");
+}
+
+function get_boost_token_dinfo(uint256 _token_id) public view returns (uint256) {
+    return boost_tokens[_token_id].dinfo;
+}
+// @external
+// def commit_transfer_ownership(_addr: address):
+//     """
+//     @notice Transfer ownership of contract to `addr`
+//     @param _addr Address to have ownership transferred to
+//     """
+//     assert msg.sender == self.admin  # dev: admin only
+//     self.future_admin = _addr
+
+function commit_transfer_ownership(address _addr) public {
+    //     @notice Transfer ownership of contract to `addr`
+    //     @param _addr Address to have ownership transferred to
+    require(msg.sender == admin, "admin only");
+    future_admin = _addr;
+}
+
+// @external
+// def accept_transfer_ownership():
+//     """
+//     @notice Accept admin role, only callable by future admin
+//     """
+//     future_admin: address = self.future_admin
+//     assert msg.sender == future_admin
+//     self.admin = future_admin
+
+function accept_transfer_ownership() public {
+    //     @notice Accept admin role, only callable by future admin
+    //     @dev Only callable by future admin
+    require(msg.sender == future_admin, "future admin only");
+    admin = future_admin;
+}
+
+
+
+
+// @external
+// def set_base_uri(_base_uri: String[128]):
+//     assert msg.sender == self.admin
+//     self.base_uri = _base_uri
+
+function set_base_uri(string memory _base_uri) public {
+    //     @notice Set the base URI for the contract
+    //     @param _base_uri The base URI for the contract
+    
+    require(msg.sender == admin, "admin only");
+    base_uri = _base_uri;
+}
 
     
 
@@ -31,10 +376,13 @@ contract VotingEscrowDelegation is VED {
 
 //     self.admin = msg.sender
 
-constructor(string memory _name, string memory _symbol, string memory _base_uri) {
+constructor(string memory _name, string memory _symbol, string memory _base_uri,address _VOTING_ESCROW,address _utils) {
     name = _name;
     symbol = _symbol;
     base_uri = _base_uri;
+    VOTING_ESCROW = _VOTING_ESCROW;
+    utils = _utils;
+
 
     admin = msg.sender;
 
@@ -60,19 +408,19 @@ constructor(string memory _name, string memory _symbol, string memory _base_uri)
 
 
 // @external
-// def _update_enumeration_data(_from: address, _to: address, _token_id: uint256):
-//     delegator: address = convert(Utils.shift(_token_id, -96), address)
+// def update_enumeration_data(_from: address, _to: address, _token_id: uint256):
+//     delegator: address = convert(Utilsdel(utils).shift(_token_id, -96), address)
 //     position_data: uint256 = self.boost_tokens[_token_id].position
 //     local_pos: uint256 = position_data % 2 ** 128
-//     global_pos: uint256 = Utils.shift(position_data, -128)
+//     global_pos: uint256 = Utilsdel(utils).shift(position_data, -128)
 //     # position in the delegator array of minted tokens
-//     delegator_pos: uint256 = Utils.shift(self.boost_tokens[_token_id].dinfo, -128)
+//     delegator_pos: uint256 = Utilsdel(utils).shift(self.boost_tokens[_token_id].dinfo, -128)
 
-//     if _from == Utils.ZERO_ADDRESS:
+//     if _from == Utilsdel(utils).ZERO_ADDRESS:
 //         # minting - This is called before updates to balance and totalSupply
 //         local_pos = self.balanceOf[_to]
 //         global_pos = self.totalSupply
-//         position_data = Utils.shift(global_pos, 128) + local_pos
+//         position_data = Utilsdel(utils).shift(global_pos, 128) + local_pos
 //         # this is a new token so we get the index of a new spot
 //         delegator_pos = self.total_minted[delegator]
 
@@ -83,11 +431,11 @@ constructor(string memory _name, string memory _symbol, string memory _base_uri)
 //         # we only mint tokens in the create_boost fn, and this is called
 //         # before we update the cancel_time so we can just set the value
 //         # of dinfo to the shifted position
-//         self.boost_tokens[_token_id].dinfo = Utils.shift(delegator_pos, 128)
+//         self.boost_tokens[_token_id].dinfo = Utilsdel(utils).shift(delegator_pos, 128)
 //         self.token_of_delegator_by_index[delegator][delegator_pos] = _token_id
 //         self.total_minted[delegator] = delegator_pos + 1
 
-//     elif _to == Utils.ZERO_ADDRESS:
+//     elif _to == Utilsdel(utils).ZERO_ADDRESS:
 //         # burning - This is called after updates to balance and totalSupply
 //         # we operate on both the global array and local array
 //         last_global_index: uint256 = self.totalSupply
@@ -99,7 +447,7 @@ constructor(string memory _name, string memory _symbol, string memory _base_uri)
 //             last_global_token: uint256 = self.tokenByIndex[last_global_index]
 //             last_global_token_pos: uint256 = self.boost_tokens[last_global_token].position
 //             # update the global position of the last global token
-//             self.boost_tokens[last_global_token].position = Utils.shift(global_pos, 128) + (last_global_token_pos % 2 ** 128)
+//             self.boost_tokens[last_global_token].position = Utilsdel(utils).shift(global_pos, 128) + (last_global_token_pos % 2 ** 128)
 //             self.tokenByIndex[global_pos] = last_global_token
 //         self.tokenByIndex[last_global_index] = 0
 
@@ -108,7 +456,7 @@ constructor(string memory _name, string memory _symbol, string memory _base_uri)
 //             last_local_token: uint256 = self.tokenOfOwnerByIndex[_from][last_local_index]
 //             last_local_token_pos: uint256 = self.boost_tokens[last_local_token].position
 //             # update the local position of the last local token
-//             self.boost_tokens[last_local_token].position = Utils.shift(last_local_token_pos / 2 ** 128, 128) + local_pos
+//             self.boost_tokens[last_local_token].position = Utilsdel(utils).shift(last_local_token_pos / 2 ** 128, 128) + local_pos
 //             self.tokenOfOwnerByIndex[_from][local_pos] = last_local_token
 //         self.tokenOfOwnerByIndex[_from][last_local_index] = 0
 //         self.boost_tokens[_token_id].position = 0
@@ -117,7 +465,7 @@ constructor(string memory _name, string memory _symbol, string memory _base_uri)
 //             last_delegator_token: uint256 = self.token_of_delegator_by_index[delegator][last_delegator_pos]
 //             last_delegator_token_dinfo: uint256 = self.boost_tokens[last_delegator_token].dinfo
 //             # update the last tokens position data and maintain the correct cancel time
-//             self.boost_tokens[last_delegator_token].dinfo = Utils.shift(delegator_pos, 128) + (last_delegator_token_dinfo % 2 ** 128)
+//             self.boost_tokens[last_delegator_token].dinfo = Utilsdel(utils).shift(delegator_pos, 128) + (last_delegator_token_dinfo % 2 ** 128)
 //             self.token_of_delegator_by_index[delegator][delegator_pos] = last_delegator_token
 //         self.token_of_delegator_by_index[delegator][last_delegator_pos] = 0
 //         self.boost_tokens[_token_id].dinfo = 0  # we are burning the token so we can just set to 0
@@ -132,28 +480,33 @@ constructor(string memory _name, string memory _symbol, string memory _base_uri)
 //             last_local_token: uint256 = self.tokenOfOwnerByIndex[_from][from_last_index]
 //             last_local_token_pos: uint256 = self.boost_tokens[last_local_token].position
 //             # update the local position of the last local token
-//             self.boost_tokens[last_local_token].position = Utils.shift(last_local_token_pos / 2 ** 128, 128) + local_pos
+//             self.boost_tokens[last_local_token].position = Utilsdel(utils).shift(last_local_token_pos / 2 ** 128, 128) + local_pos
 //             self.tokenOfOwnerByIndex[_from][local_pos] = last_local_token
 //         self.tokenOfOwnerByIndex[_from][from_last_index] = 0
 
 //         # to is simple we just add to the end of the list
 //         local_pos = self.balanceOf[_to]
 //         self.tokenOfOwnerByIndex[_to][local_pos] = _token_id
-//         self.boost_tokens[_token_id].position = Utils.shift(global_pos, 128) + local_pos
+//         self.boost_tokens[_token_id].position = Utilsdel(utils).shift(global_pos, 128) + local_pos
+
+function debugger(address _delegator) public view returns(Point memory) {
+    return Utilsdel(utils)._deconstruct_bias_slope(boost[_delegator].delegated);
+}
 
 
-function _update_enumeration_data(address _from,address _to,uint256 _token_id,uint256 balance_of_from,uint256 balance_of_to) external {
-        address delegator = address(uint160((Utils.shift(_token_id, (-96)))));
+function update_enumeration_data(address _from,address _to,uint256 _token_id,uint256 balance_of_from,uint256 balance_of_to) external {
+        address delegator = address(uint160((Utilsdel(utils).shift(_token_id, (-96)))));
         uint256 position_data = boost_tokens[_token_id].position;
         uint256 local_pos = position_data % 2 ** 128;
-        uint256 global_pos = Utils.shift(position_data, -128);
-        uint256 delegator_pos = Utils.shift(boost_tokens[_token_id].dinfo, -128);
+        uint256 global_pos = Utilsdel(utils).shift(position_data, -128);
+        uint256 delegator_pos = Utilsdel(utils).shift(boost_tokens[_token_id].dinfo, -128);
 
 
-        if (_from == Utils.ZERO_ADDRESS) {
+        if (_from == ZERO_ADDRESS) {
+            local_pos = balance_of_to;
             global_pos = totalSupply;
-            position_data = Utils.shift(global_pos, 128) + local_pos;
-            // this is a new token so we get the index of a new spot
+            position_data = Utilsdel(utils).shift(global_pos, 128) + local_pos;
+            // // this is a new token so we get the index of a new spot
             delegator_pos = total_minted[delegator];
 
             tokenByIndex[global_pos] = _token_id;
@@ -163,13 +516,13 @@ function _update_enumeration_data(address _from,address _to,uint256 _token_id,ui
             // we only mint tokens in the create_boost fn, and this is called
             // before we update the cancel_time so we can just set the value
             // of dinfo to the shifted position
-            boost_tokens[_token_id].dinfo = Utils.shift(delegator_pos, 128) + (delegator_pos % 2 ** 128);
+            boost_tokens[_token_id].dinfo = Utilsdel(utils).shift(delegator_pos, 128) + (delegator_pos % 2 ** 128);
             token_of_delegator_by_index[delegator][delegator_pos] = _token_id;
             total_minted[delegator] = delegator_pos + 1;
 
             
             totalSupply += 1;
-        } else if (_to == Utils.ZERO_ADDRESS) {
+        } else if (_to == ZERO_ADDRESS) {
             
 
             // burning - This is called after updates to balance and totalSupply
@@ -182,7 +535,7 @@ function _update_enumeration_data(address _from,address _to,uint256 _token_id,ui
                 uint256 last_global_token = tokenByIndex[last_global_index];
                 uint256 last_global_token_pos = boost_tokens[last_global_token].position;
                 // update the global position of the last global token
-                boost_tokens[last_global_token].position = Utils.shift(global_pos, 128) + (last_global_token_pos % 2 ** 128);
+                boost_tokens[last_global_token].position = Utilsdel(utils).shift(global_pos, 128) + (last_global_token_pos % 2 ** 128);
                 tokenByIndex[global_pos] = last_global_token;
                 
             }
@@ -193,7 +546,7 @@ function _update_enumeration_data(address _from,address _to,uint256 _token_id,ui
                 uint256 last_local_token = tokenOfOwnerByIndex[_from][balance_of_from];
                 // uint256 last_local_token_pos = ;
                 // update the local position of the last local token
-                boost_tokens[last_local_token].position = Utils.shift(boost_tokens[last_local_token].position / 2 ** 128, 128) + local_pos;
+                boost_tokens[last_local_token].position = Utilsdel(utils).shift(boost_tokens[last_local_token].position / 2 ** 128, 128) + local_pos;
                 tokenOfOwnerByIndex[_from][local_pos] = last_local_token;
             }
             tokenOfOwnerByIndex[_from][balance_of_from] = 0;
@@ -203,7 +556,7 @@ function _update_enumeration_data(address _from,address _to,uint256 _token_id,ui
                 uint256 last_delegator_token = token_of_delegator_by_index[delegator][last_delegator_pos];
                 uint256 last_delegator_token_dinfo = boost_tokens[last_delegator_token].dinfo;
                 // update the last tokens position data and maintain the correct cancel time
-                boost_tokens[last_delegator_token].dinfo = Utils.shift(delegator_pos, 128) + (last_delegator_token_dinfo % 2 ** 128);
+                boost_tokens[last_delegator_token].dinfo = Utilsdel(utils).shift(delegator_pos, 128) + (last_delegator_token_dinfo % 2 ** 128);
                 token_of_delegator_by_index[delegator][delegator_pos] = last_delegator_token;
             }
             token_of_delegator_by_index[delegator][last_delegator_pos] = 0;
@@ -222,7 +575,7 @@ function _update_enumeration_data(address _from,address _to,uint256 _token_id,ui
                 uint256 last_local_token = tokenOfOwnerByIndex[_from][balance_of_from];
                 uint256 last_local_token_pos = boost_tokens[last_local_token].position;
                 // update the local position of the last local token
-                boost_tokens[last_local_token].position = Utils.shift(last_local_token_pos / 2 ** 128, 128) + local_pos;
+                boost_tokens[last_local_token].position = Utilsdel(utils).shift(last_local_token_pos / 2 ** 128, 128) + local_pos;
                 tokenOfOwnerByIndex[_from][local_pos] = last_local_token;
             }
             tokenOfOwnerByIndex[_from][balance_of_from] = 0;
@@ -230,7 +583,7 @@ function _update_enumeration_data(address _from,address _to,uint256 _token_id,ui
             // to is simple we just add to the end of the list
             local_pos = balance_of_to;
             tokenOfOwnerByIndex[_to][local_pos] = _token_id;
-            boost_tokens[_token_id].position = Utils.shift(global_pos, 128) + local_pos;
+            boost_tokens[_token_id].position = Utilsdel(utils).shift(global_pos, 128) + local_pos;
         }
         
 
@@ -242,54 +595,54 @@ function _update_enumeration_data(address _from,address _to,uint256 _token_id,ui
 // def _burn(_token_id: uint256):
 //     owner: address = self.ownerOf[_token_id]
 
-//     self._approve(owner, Utils.ZERO_ADDRESS, _token_id)
+//     self._approve(owner, Utilsdel(utils).ZERO_ADDRESS, _token_id)
 
 //     self.balanceOf[owner] -= 1
-//     self.ownerOf[_token_id] = Utils.ZERO_ADDRESS
+//     self.ownerOf[_token_id] = Utilsdel(utils).ZERO_ADDRESS
 //     self.totalSupply -= 1
 
-//     self._update_enumeration_data(owner, Utils.ZERO_ADDRESS, _token_id)
+//     self.update_enumeration_data(owner, Utilsdel(utils).ZERO_ADDRESS, _token_id)
 
-//     log Transfer(owner, Utils.ZERO_ADDRESS, _token_id)
+//     log Transfer(owner, Utilsdel(utils).ZERO_ADDRESS, _token_id)
 
 // BURNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN
 // function _burn(uint256 _token_id) private {
 //     address owner = ownerOf[_token_id];
 
-//     _approve(owner, Utils.ZERO_ADDRESS, _token_id);
+//     _approve(owner, Utilsdel(utils).ZERO_ADDRESS, _token_id);
 
 //     balanceOf[owner] -= 1;
-//     ownerOf[_token_id] = Utils.ZERO_ADDRESS;
+//     ownerOf[_token_id] = Utilsdel(utils).ZERO_ADDRESS;
 //     totalSupply -= 1;
 
-//     _update_enumeration_data(owner, Utils.ZERO_ADDRESS, _token_id);
+//     update_enumeration_data(owner, Utilsdel(utils).ZERO_ADDRESS, _token_id);
 
-//     emit Utils.Transfer(owner, Utils.ZERO_ADDRESS, _token_id);
+//     emit Transfer(owner, Utilsdel(utils).ZERO_ADDRESS, _token_id);
 // }
 
 
 // @external
 // def _mint(_to: address, _token_id: uint256):
-//     assert _to != Utils.ZERO_ADDRESS  # dev: minting to Utils.ZERO_ADDRESS disallowed
-//     assert self.ownerOf[_token_id] == Utils.ZERO_ADDRESS  # dev: token exists
+//     assert _to != Utilsdel(utils).ZERO_ADDRESS  # dev: minting to Utilsdel(utils).ZERO_ADDRESS disallowed
+//     assert self.ownerOf[_token_id] == Utilsdel(utils).ZERO_ADDRESS  # dev: token exists
 
-//     self._update_enumeration_data(Utils.ZERO_ADDRESS, _to, _token_id)
+//     self.update_enumeration_data(Utilsdel(utils).ZERO_ADDRESS, _to, _token_id)
 
 //     self.balanceOf[_to] += 1
 //     self.ownerOf[_token_id] = _to
 //     self.totalSupply += 1
 
-//     log Transfer(Utils.ZERO_ADDRESS, _to, _token_id)
+//     log Transfer(Utilsdel(utils).ZERO_ADDRESS, _to, _token_id)
 
 
 
 // @external
 // def _mint_boost(_token_id: uint256, _delegator: address, _receiver: address, _bias: int256, _slope: int256, _cancel_time: uint256, _expire_time: uint256):
-//     is_whitelist: uint256 = convert(self.grey_list[_receiver][Utils.ZERO_ADDRESS], uint256)
+//     is_whitelist: uint256 = convert(self.grey_list[_receiver][Utilsdel(utils).ZERO_ADDRESS], uint256)
 //     delegator_status: uint256 = convert(self.grey_list[_receiver][_delegator], uint256)
 //     assert not convert(bitwise_xor(is_whitelist, delegator_status), bool)  # dev: mint boost not allowed
 
-//     data: uint256 = Utils.shift(convert(_bias, uint256), 128) + convert(Utils.abs(_slope), uint256)
+//     data: uint256 = Utilsdel(utils).shift(convert(_bias, uint256), 128) + convert(Utilsdel(utils).abs(_slope), uint256)
 //     self.boost[_delegator].delegated += data
 //     self.boost[_receiver].received += data
 
@@ -300,11 +653,11 @@ function _update_enumeration_data(address _from,address _to,uint256 _token_id,ui
 //     self.boost_tokens[_token_id] = token
 
 function _mint_boost(uint256 _token_id,address _delegator,address _receiver,Point memory point,uint256 _cancel_time,uint256 _expire_time) private {
-    // uint256 is_whitelist = (grey_list[_receiver][Utils.ZERO_ADDRESS] ? 1 : 0);
+    // uint256 is_whitelist = (grey_list[_receiver][Utilsdel(utils).ZERO_ADDRESS] ? 1 : 0);
     // uint256 delegator_status = (grey_list[_receiver][_delegator] ? 1 : 0);
-    require ((((grey_list[_receiver][Utils.ZERO_ADDRESS] ? 1 : 0) ^ (grey_list[_receiver][_delegator] ? 1 : 0))== 0)); // dev: mint boost not allowed
+    require ((((grey_list[_receiver][ZERO_ADDRESS] ? 1 : 0) ^ (grey_list[_receiver][_delegator] ? 1 : 0))== 0)); // dev: mint boost not allowed
 
-    uint256 data = Utils.shift(Utils.inttouint(point.bias), 128) + Utils.inttouint(Utils.abs(point.slope));
+    uint256 data = Utilsdel(utils).shift(Utilsdel(utils).inttouint(point.bias), 128) + Utilsdel(utils).inttouint(Utilsdel(utils).abs(point.slope));
     boost[_delegator].delegated += data;
     boost[_receiver].received += data;
     boost_tokens[_token_id].data = data;
@@ -326,14 +679,14 @@ function _mint_boost(uint256 _token_id,address _delegator,address _receiver,Poin
 
 //     token.data = 0
 //     # maintain the same position in the delegator array, but remove the cancel time
-//     token.dinfo = Utils.shift(token.dinfo / 2 ** 128, 128)
+//     token.dinfo = Utilsdel(utils).shift(token.dinfo / 2 ** 128, 128)
 //     token.expire_time = 0
 //     self.boost_tokens[_token_id] = token
 
 //     # update the next expiry data
 //     expiry_data: uint256 = self.boost[_delegator].expiry_data
 //     next_expiry: uint256 = expiry_data % 2 ** 128
-//     active_delegations: uint256 = Utils.shift(expiry_data, -128) - 1
+//     active_delegations: uint256 = Utilsdel(utils).shift(expiry_data, -128) - 1
 
 //     expiries: uint256 = self.account_expiries[_delegator][expire_time]
 
@@ -356,7 +709,7 @@ function _mint_boost(uint256 _token_id,address _delegator,address _receiver,Poin
 //     elif active_delegations == 0:
 //         next_expiry = 0
 
-//     self.boost[_delegator].expiry_data = Utils.shift(active_delegations, 128) + next_expiry
+//     self.boost[_delegator].expiry_data = Utilsdel(utils).shift(active_delegations, 128) + next_expiry
 //     self.account_expiries[_delegator][expire_time] = expiries - 1
 
 function _burn_boost(uint256 _token_id,address _delegator,address _receiver) external {
@@ -371,14 +724,14 @@ function _burn_boost(uint256 _token_id,address _delegator,address _receiver) ext
     boost[_receiver].received -= token.data;
 
     token.data = 0;
-    token.dinfo = Utils.shift(token.dinfo / 2 ** 128, 128);
+    token.dinfo = Utilsdel(utils).shift(token.dinfo / 2 ** 128, 128);
     token.expire_time = 0;
     boost_tokens[_token_id] = token;
 
     // update the next expiry data
     uint256 expiry_data = boost[_delegator].expiry_data;
     uint256 next_expiry = expiry_data % 2 ** 128;
-    uint256 active_delegations = Utils.shift(expiry_data, -128) - 1;
+    uint256 active_delegations = Utilsdel(utils).shift(expiry_data, -128) - 1;
 
     uint256 expiries = account_expiries[_delegator][expire_time];
 
@@ -395,7 +748,7 @@ function _burn_boost(uint256 _token_id,address _delegator,address _receiver) ext
             if (i == 512) {
                 require(false ,"Failed to find next expiry") ;
             }
-            uint256 week_ts = expire_time + Utils.WEEK * (i + 1);
+            uint256 week_ts = expire_time + WEEK * (i + 1);
             if (account_expiries[_delegator][week_ts] > 0) {
                 next_expiry = week_ts;
                 break;
@@ -405,19 +758,19 @@ function _burn_boost(uint256 _token_id,address _delegator,address _receiver) ext
         next_expiry = 0;
     }
 
-    boost[_delegator].expiry_data = Utils.shift(active_delegations, 128) + next_expiry;
+    boost[_delegator].expiry_data = Utilsdel(utils).shift(active_delegations, 128) + next_expiry;
     account_expiries[_delegator][expire_time] = expiries - 1;
 }
 
 
 // @external
 // def _transfer_boost(_from: address, _to: address, _bias: int256, _slope: int256):
-//     data: uint256 = Utils.shift(convert(_bias, uint256), 128) + convert(Utils.abs(_slope), uint256)
+//     data: uint256 = Utilsdel(utils).shift(convert(_bias, uint256), 128) + convert(Utilsdel(utils).abs(_slope), uint256)
 //     self.boost[_from].received -= data
 //     self.boost[_to].received += data
 
 function _transfer_boost(address _from,address _to,int256 _bias,int256 _slope) external {
-    uint256 data = Utils.shift(Utils.inttouint(_bias), 128) + Utils.inttouint(Utils.abs(_slope));
+    uint256 data = Utilsdel(utils).shift(Utilsdel(utils).inttouint(_bias), 128) + Utilsdel(utils).inttouint(Utilsdel(utils).abs(_slope));
     boost[_from].received -= data;
     boost[_to].received += data;
 }
@@ -425,15 +778,15 @@ function _transfer_boost(address _from,address _to,int256 _bias,int256 _slope) e
 
 // @pure
 // @external
-// def Utils._deconstruct_bias_slope(_data: uint256) -> Point:
-//     return Point({bias: convert(Utils.shift(_data, -128), int256), slope: -convert(_data % 2 ** 128, int256)})
+// def Utilsdel(utils)._deconstruct_bias_slope(_data: uint256) -> Point:
+//     return Point({bias: convert(Utilsdel(utils).shift(_data, -128), int256), slope: -convert(_data % 2 ** 128, int256)})
 
 
 
 
 // @pure
 // @external
-// def Utils._calc_bias_slope(_x: int256, _y: int256, _expire_time: int256) -> Point:
+// def Utilsdel(utils)._calc_bias_slope(_x: int256, _y: int256, _expire_time: int256) -> Point:
 //     # SLOPE: (y2 - y1) / (x2 - x1)
 //     # BIAS: y = mx + b -> y - mx = b
 //     slope: int256 = -_y / (_expire_time - _x)
@@ -445,22 +798,22 @@ function _transfer_boost(address _from,address _to,int256 _bias,int256 _slope) e
 // @external
 // def _transfer(_from: address, _to: address, _token_id: uint256):
 //     assert self.ownerOf[_token_id] == _from  # dev: _from is not owner
-//     assert _to != Utils.ZERO_ADDRESS  # dev: transfers to Utils.ZERO_ADDRESS are disallowed
+//     assert _to != Utilsdel(utils).ZERO_ADDRESS  # dev: transfers to Utilsdel(utils).ZERO_ADDRESS are disallowed
 
-//     delegator: address = convert(Utils.shift(_token_id, -96), address)
-//     is_whitelist: uint256 = convert(self.grey_list[_to][Utils.ZERO_ADDRESS], uint256)
+//     delegator: address = convert(Utilsdel(utils).shift(_token_id, -96), address)
+//     is_whitelist: uint256 = convert(self.grey_list[_to][Utilsdel(utils).ZERO_ADDRESS], uint256)
 //     delegator_status: uint256 = convert(self.grey_list[_to][delegator], uint256)
 //     assert not convert(bitwise_xor(is_whitelist, delegator_status), bool)  # dev: transfer boost not allowed
 
 //     # clear previous token approval
-//     self._approve(_from, Utils.ZERO_ADDRESS, _token_id)
+//     self._approve(_from, Utilsdel(utils).ZERO_ADDRESS, _token_id)
 
 //     self.balanceOf[_from] -= 1
-//     self._update_enumeration_data(_from, _to, _token_id)
+//     self.update_enumeration_data(_from, _to, _token_id)
 //     self.balanceOf[_to] += 1
 //     self.ownerOf[_token_id] = _to
 
-//     tpoint: Point = self.Utils._deconstruct_bias_slope(self.boost_tokens[_token_id].data)
+//     tpoint: Point = self.Utilsdel(utils)._deconstruct_bias_slope(self.boost_tokens[_token_id].data)
 //     tvalue: int256 = tpoint.slope * convert(block.timestamp, int256) + tpoint.bias
 
 //     # if the boost value is negative, reset the slope and bias
@@ -481,11 +834,11 @@ function _transfer_boost(address _from,address _to,int256 _bias,int256 _slope) e
 // @external
 // def cancel_boost(_token_id: uint256, _caller: address):
 //     receiver: address = self.ownerOf[_token_id]
-//     assert receiver != Utils.ZERO_ADDRESS  # dev: token does not exist
-//     delegator: address = convert(Utils.shift(_token_id, -96), address)
+//     assert receiver != Utilsdel(utils).ZERO_ADDRESS  # dev: token does not exist
+//     delegator: address = convert(Utilsdel(utils).shift(_token_id, -96), address)
 
 //     token: Token = self.boost_tokens[_token_id]
-//     tpoint: Point = self.Utils._deconstruct_bias_slope(token.data)
+//     tpoint: Point = self.Utilsdel(utils)._deconstruct_bias_slope(token.data)
 //     tvalue: int256 = tpoint.slope * convert(block.timestamp, int256) + tpoint.bias
 
 //     # if not (the owner or operator or the boost value is negative)
@@ -510,7 +863,7 @@ function _transfer_boost(address _from,address _to,int256 _bias,int256 _slope) e
 
 function _set_delegation_status(address _receiver,address _delegator,bool _status) external {
     grey_list[_receiver][_delegator] = _status;
-    emit Utils.GreyListUpdated(_receiver, _delegator, _status);
+    emit GreyListUpdated(_receiver, _delegator, _status);
 }
 
 
@@ -535,7 +888,7 @@ function _set_delegation_status(address _receiver,address _delegator,bool _statu
 //         char: Bytes[1] = slice(convert(value, bytes32), 31, 1)
 //         buffer = raw_call(
 //             IDENTITY_PRECOMPILE,
-//             Utils.concat(buffer, char),
+//             Utilsdel(utils).concat(buffer, char),
 //             max_outsize=78,
 //             is_static_call=True
 //         )
@@ -617,7 +970,7 @@ function _set_delegation_status(address _receiver,address _delegator,bool _statu
 //         THEY MAY BE PERMANENTLY LOST
 //     @dev Throws unless `msg.sender` is the current owner, an authorized
 //         operator, or the approved address for this NFT. Throws if `_from` is
-//         not the current owner. Throws if `_to` is the Utils.ZERO_ADDRESS.
+//         not the current owner. Throws if `_to` is the Utilsdel(utils).ZERO_ADDRESS.
 //     @param _from The current owner of the NFT
 //     @param _to The new owner
 //     @param _token_id The NFT to transfer
@@ -631,7 +984,7 @@ function _set_delegation_status(address _receiver,address _delegator,bool _statu
 // @view
 // @external
 // def tokenURI(_token_id: uint256) -> String[256]:
-//     return Utils.concat(self.base_uri, self._uint_to_string(_token_id))
+//     return Utilsdel(utils).concat(self.base_uri, self._uint_to_string(_token_id))
 
 
 
@@ -647,9 +1000,9 @@ function _set_delegation_status(address _receiver,address _delegator,bool _statu
 
 //     tdata: uint256 = self.boost_tokens[_token_id].data
 //     if tdata != 0:
-//         tpoint: Point = self.Utils._deconstruct_bias_slope(tdata)
+//         tpoint: Point = self.Utilsdel(utils)._deconstruct_bias_slope(tdata)
 
-//         delegator: address = convert(Utils.shift(_token_id, -96), address)
+//         delegator: address = convert(Utilsdel(utils).shift(_token_id, -96), address)
 //         owner: address = self.ownerOf[_token_id]
 
 //         self._burn_boost(_token_id, delegator, owner, tpoint.bias, tpoint.slope)
@@ -663,15 +1016,15 @@ function _set_delegation_status(address _receiver,address _delegator,bool _statu
 //     //     @dev Only callable by the token owner, their operator, or an approved account.
 //     //         Burning a token with a currently active boost, burns the boost.
 //     //     @param _token_id The token to burn
-//     Utils._is_approved_or_owner(msg.sender,ownerOf[_token_id],getApproved[_token_id],isApprovedForAll[ownerOf[_token_id]][msg.sender]);
+//     Utilsdel(utils)._is_approved_or_owner(msg.sender,ownerOf[_token_id],getApproved[_token_id],isApprovedForAll[ownerOf[_token_id]][msg.sender]);
 //     uint256 tdata = boost_tokens[_token_id].data;
 //     if (tdata != 0) {
-//         address delegator = address(uint160(Utils.shift(_token_id, -96)));
+//         address delegator = address(uint160(Utilsdel(utils).shift(_token_id, -96)));
 //         address owner = ownerOf[_token_id];
 //         _burn_boost(_token_id, delegator, owner);
-//         emit Utils.BurnBoost(delegator, owner, _token_id);
+//         emit BurnBoost(delegator, owner, _token_id);
 //     }
-//     _update_enumeration_data(ownerOf[_token_id], Utils.ZERO_ADDRESS, _token_id);
+//     update_enumeration_data(ownerOf[_token_id], Utilsdel(utils).ZERO_ADDRESS, _token_id);
 // }
 
 
@@ -731,11 +1084,11 @@ function _set_delegation_status(address _receiver,address _delegator,bool _statu
 //     next_expiry: uint256 = expiry_data % 2 ** 128
 
 //     if next_expiry == 0:
-//         next_expiry = Utils.MAX_UINT256
+//         next_expiry = Utilsdel(utils).MAX_UINT256
 
 //     assert block.timestamp < next_expiry  # dev: negative boost token is in circulation
 //     assert _percentage > 0  # dev: percentage must be greater than 0 bps
-//     assert _percentage <= Utils.MAX_PCT  # dev: percentage must be less than 10_000 bps
+//     assert _percentage <= Utilsdel(utils).MAX_PCT  # dev: percentage must be less than 10_000 bps
 //     assert _cancel_time <= expire_time  # dev: cancel time is after expiry
 
 //     assert expire_time >= block.timestamp + WEEK  # dev: boost duration must be atleast WEEK
@@ -743,22 +1096,22 @@ function _set_delegation_status(address _receiver,address _delegator,bool _statu
 //     assert _id < 2 ** 96  # dev: id out of bounds
 
 //     # [delegator address 160][cancel_time uint40][id uint56]
-//     token_id: uint256 = Utils.shift(convert(_delegator, uint256), 96) + _id
+//     token_id: uint256 = Utilsdel(utils).shift(convert(_delegator, uint256), 96) + _id
 //     # check if the token exists here before we expend more gas by minting it
 //     self._mint(_receiver, token_id)
 
 //     # delegated slope and bias
-//     point: Point = self.Utils._deconstruct_bias_slope(self.boost[_delegator].delegated)
+//     point: Point = self.Utilsdel(utils)._deconstruct_bias_slope(self.boost[_delegator].delegated)
 
 //     time: int256 = convert(block.timestamp, int256)
 
 //     # delegated boost will be positive, if any of circulating boosts are negative
 //     # we have already reverted
 //     delegated_boost: int256 = point.slope * time + point.bias
-//     y: int256 = _percentage * (VotingEscrow(VOTING_ESCROW).balanceOf(_delegator) - delegated_boost) / Utils.MAX_PCT
+//     y: int256 = _percentage * (VotingEscrow(VOTING_ESCROW).balanceOf(_delegator) - delegated_boost) / Utilsdel(utils).MAX_PCT
 //     assert y > 0  # dev: no boost
 
-//     point = self.Utils._calc_bias_slope(time, y, convert(expire_time, int256))
+//     point = self.Utilsdel(utils)._calc_bias_slope(time, y, convert(expire_time, int256))
 //     assert point.slope < 0  # dev: invalid slope
 
 //     self._mint_boost(token_id, _delegator, _receiver, point.bias, point.slope, _cancel_time, expire_time)
@@ -767,9 +1120,9 @@ function _set_delegation_status(address _receiver,address _delegator,bool _statu
 //     if expire_time < next_expiry:
 //         next_expiry = expire_time
 
-//     active_delegations: uint256 = Utils.shift(expiry_data, -128)
+//     active_delegations: uint256 = Utilsdel(utils).shift(expiry_data, -128)
 //     self.account_expiries[_delegator][expire_time] += 1
-//     self.boost[_delegator].expiry_data = Utils.shift(active_delegations + 1, 128) + next_expiry
+//     self.boost[_delegator].expiry_data = Utilsdel(utils).shift(active_delegations + 1, 128) + next_expiry
 
 //     log DelegateBoost(_delegator, _receiver, token_id, convert(y, uint256), _cancel_time, _expire_time)
 
@@ -779,9 +1132,8 @@ function create_boost(
     int256 _percentage,
     uint256 _cancel_time,
     uint256 _expire_time,
-    uint256 _id,
-    uint256 token_id
-) external  {
+    uint256 _id
+) external {
     //     @notice Create a boost and delegate it to another account.
     //     @dev Delegated boost can become negative, and requires active management, else
     //         the adjusted veCRV balance of the delegator's account will decrease until reaching 0
@@ -799,34 +1151,37 @@ function create_boost(
     //         to have specific ranges.
     
 
-    uint256 expire_time = Utils.timechecker(_expire_time, _cancel_time, _delegator);
-    // uint256 expiry_data = boost[_delegator].expiry_data;
+    uint256 expire_time = Utilsdel(utils).timechecker(_expire_time, _cancel_time, _delegator,VOTING_ESCROW);
+    // // uint256 expiry_data = boost[_delegator].expiry_data;
     uint256 next_expiry = boost[_delegator].expiry_data % 2 ** 128;
 
     if (next_expiry == 0) {
-        next_expiry = Utils.MAX_UINT256;
+        next_expiry = MAX_UINT256;
     }
 
     require(block.timestamp < next_expiry, "negative boost token is in circulation");
-    require(_percentage > 0 && _percentage <= Utils.uinttoint(Utils.MAX_PCT) , "percentage must be greater than 0 bps and less than 10_000 bps");
+    require(_percentage > 0 && _percentage <= Utilsdel(utils).uinttoint(MAX_PCT) , "percentage must be greater than 0 bps and less than 10_000 bps");
     require(_id < 2 ** 96, "id out of bounds");
 
     // [delegator address 160][cancel_time uint40][id uint56]
     
+    
 
     // delegated slope and bias
-    Point memory point = Utils._deconstruct_bias_slope(boost[_delegator].delegated);
+    Point memory point = Utilsdel(utils)._deconstruct_bias_slope(boost[_delegator].delegated);
 
-    // int256 time = Utils.uinttoint(block.timestamp);
+    // int256 time = Utilsdel(utils).uinttoint(block.timestamp);
 
     // delegated boost will be positive, if any of circulating boosts are negative
     // we have already reverted
 
-    int256 y = Utils.ycalc(_delegator, point, _percentage);
+    int256 y = Utilsdel(utils).ycalc(_delegator, point, _percentage,VOTING_ESCROW);
     require(y > 0, "no boost");
 
-    point = Utils._calc_bias_slope(Utils.uinttoint(block.timestamp), y, Utils.uinttoint(expire_time));
+    point = Utilsdel(utils)._calc_bias_slope(Utilsdel(utils).uinttoint(block.timestamp), y, Utilsdel(utils).uinttoint(expire_time));
     require(point.slope < 0, "invalid slope");
+
+    uint256 token_id = Utilsdel(utils).shift((uint160(_delegator)), 96) + _id;
 
 
     _mint_boost(token_id, _delegator, _receiver, point, _cancel_time, expire_time);
@@ -836,10 +1191,10 @@ function create_boost(
         next_expiry = expire_time;
     }
 
-    uint256 active_delegations = Utils.shift(boost[_delegator].expiry_data, -128);
-    boost[_delegator].expiry_data = Utils.shift(active_delegations + 1, 128) + next_expiry;
+    uint256 active_delegations = Utilsdel(utils).shift(boost[_delegator].expiry_data, -128);
+    boost[_delegator].expiry_data = Utilsdel(utils).shift(active_delegations + 1, 128) + next_expiry;
     account_expiries[_delegator][expire_time] += 1;
-    emit Utils.DelegateBoost(_delegator, _receiver, token_id, Utils.inttouint(y), _cancel_time, _expire_time);
+    emit DelegateBoost(_delegator, _receiver, token_id, Utilsdel(utils).inttouint(y), _cancel_time, _expire_time);
 
 }
 
@@ -860,13 +1215,13 @@ function create_boost(
 //         and atleast a WEEK from now, and less than the veCRV lock expiry of the
 //         delegator's account. This value is rounded down to the nearest WEEK.
 //     """
-//     delegator: address = convert(Utils.shift(_token_id, -96), address)
+//     delegator: address = convert(Utilsdel(utils).shift(_token_id, -96), address)
 //     receiver: address = self.ownerOf[_token_id]
 
 //     assert msg.sender == delegator or self.isApprovedForAll[delegator][msg.sender]  # dev: only delegator or operator
-//     assert receiver != Utils.ZERO_ADDRESS  # dev: boost token does not exist
+//     assert receiver != Utilsdel(utils).ZERO_ADDRESS  # dev: boost token does not exist
 //     assert _percentage > 0  # dev: percentage must be greater than 0 bps
-//     assert _percentage <= Utils.MAX_PCT  # dev: percentage must be less than 10_000 bps
+//     assert _percentage <= Utilsdel(utils).MAX_PCT  # dev: percentage must be less than 10_000 bps
 
 //     # timestamp when delegating account's voting escrow ends - also our second point (lock_expiry, 0)
 //     token: Token = self.boost_tokens[_token_id]
@@ -877,7 +1232,7 @@ function create_boost(
 //     assert expire_time >= block.timestamp + WEEK  # dev: boost duration must be atleast one day
 //     assert expire_time <= VotingEscrow(VOTING_ESCROW).locked__end(delegator) # dev: boost expiration is past voting escrow lock expiry
 
-//     point: Point = self.Utils._deconstruct_bias_slope(token.data)
+//     point: Point = self.Utilsdel(utils)._deconstruct_bias_slope(token.data)
 
 //     time: int256 = convert(block.timestamp, int256)
 //     tvalue: int256 = point.slope * time + point.bias
@@ -897,16 +1252,16 @@ function create_boost(
 //     next_expiry: uint256 = expiry_data % 2 ** 128
 
 //     if next_expiry == 0:
-//         next_expiry = Utils.MAX_UINT256
+//         next_expiry = Utilsdel(utils).MAX_UINT256
 
 //     assert block.timestamp < next_expiry  # dev: negative outstanding boosts
 
 //     # delegated slope and bias
-//     point = self.Utils._deconstruct_bias_slope(self.boost[delegator].delegated)
+//     point = self.Utilsdel(utils)._deconstruct_bias_slope(self.boost[delegator].delegated)
 
 //     # verify delegated boost isn't negative, else it'll inflate out vecrv balance
 //     delegated_boost: int256 = point.slope * time + point.bias
-//     y: int256 = _percentage * (VotingEscrow(VOTING_ESCROW).balanceOf(delegator) - delegated_boost) / Utils.MAX_PCT
+//     y: int256 = _percentage * (VotingEscrow(VOTING_ESCROW).balanceOf(delegator) - delegated_boost) / Utilsdel(utils).MAX_PCT
 //     # a delegator can snipe the exact moment a token expires and create a boost
 //     # with 10_000 or some percentage of their boost, which is perfectly fine.
 //     # this check is here so the user can't extend a boost unless they actually
@@ -914,7 +1269,7 @@ function create_boost(
 //     assert y > 0  # dev: no boost
 //     assert y >= tvalue  # dev: cannot reduce value of boost
 
-//     point = self.Utils._calc_bias_slope(time, y, convert(expire_time, int256))
+//     point = self.Utilsdel(utils)._calc_bias_slope(time, y, convert(expire_time, int256))
 //     assert point.slope < 0  # dev: invalid slope
 
 //     self._mint_boost(_token_id, delegator, receiver, point.bias, point.slope, _cancel_time, expire_time)
@@ -923,9 +1278,9 @@ function create_boost(
 //     if expire_time < next_expiry:
 //         next_expiry = expire_time
 
-//     active_delegations: uint256 = Utils.shift(expiry_data, -128)
+//     active_delegations: uint256 = Utilsdel(utils).shift(expiry_data, -128)
 //     self.account_expiries[delegator][expire_time] += 1
-//     self.boost[delegator].expiry_data = Utils.shift(active_delegations + 1, 128) + next_expiry
+//     self.boost[delegator].expiry_data = Utilsdel(utils).shift(active_delegations + 1, 128) + next_expiry
 
 //     log ExtendBoost(delegator, receiver, _token_id, convert(y, uint256), expire_time, _cancel_time)
 
@@ -942,20 +1297,20 @@ function extend_boost(uint256 _token_id , int256 _percentage , uint256 _expiry_t
     //         and atleast a WEEK from now, and less than the veCRV lock expiry of the
     //         delegator's account. This value is rounded down to the nearest WEEK.
 
-    address delegator = address(uint160(Utils.shift(_token_id, -96)));
+    address delegator = address(uint160(Utilsdel(utils).shift(_token_id, -96)));
     
-    require(receiver != Utils.ZERO_ADDRESS); // dev: boost token does not exist
+    require(receiver != ZERO_ADDRESS); // dev: boost token does not exist
     require(_percentage > 0); // dev: percentage must be greater than 0 bps
-    require(_percentage <= Utils.uinttoint(Utils.MAX_PCT)); // dev: percentage must be less than 10_000 bps
+    require(_percentage <= Utilsdel(utils).uinttoint(MAX_PCT)); // dev: percentage must be less than 10_000 bps
 
     // timestamp when delegating account's voting escrow ends - also our second point (lock_expiry, 0)
     Token memory token = boost_tokens[_token_id];
 
-    uint256 expire_time = Utils.timechecker(_expiry_time, _cancel_time, delegator);
+    uint256 expire_time = Utilsdel(utils).timechecker(_expiry_time, _cancel_time, delegator,VOTING_ESCROW);
 
-    Point memory point = Utils._deconstruct_bias_slope(token.data);
+    Point memory point = Utilsdel(utils)._deconstruct_bias_slope(token.data);
 
-    int256 time = Utils.uinttoint(block.timestamp);
+    int256 time = Utilsdel(utils).uinttoint(block.timestamp);
 
     // int256 tvalue = point.slope * time + point.bias;
 
@@ -973,17 +1328,17 @@ function extend_boost(uint256 _token_id , int256 _percentage , uint256 _expiry_t
     uint256 next_expiry = boost[delegator].expiry_data % 2 ** 128;
 
     if (next_expiry == 0) {
-        next_expiry = Utils.MAX_UINT256;
+        next_expiry = MAX_UINT256;
     }
 
     require(block.timestamp < next_expiry); // dev: negative outstanding boosts
 
     // delegated slope and bias
-    point = Utils._deconstruct_bias_slope(boost[delegator].delegated);
+    point = Utilsdel(utils)._deconstruct_bias_slope(boost[delegator].delegated);
 
     // verify delegated boost isn't negative, else it'll inflate out vecrv balance
     // int256 delegated_boost = point.slope * time + point.bias;
-    int256 y = Utils.ycalc(delegator, point, _percentage);
+    int256 y = Utilsdel(utils).ycalc(delegator, point, _percentage,VOTING_ESCROW);
 
     // a delegator can snipe the exact moment a token expires and create a boost
     // with 10_000 or some percentage of their boost, which is perfectly fine.
@@ -992,7 +1347,7 @@ function extend_boost(uint256 _token_id , int256 _percentage , uint256 _expiry_t
     require(y > 0); // dev: no boost
     require(y >= (point.slope * time + point.bias)); // dev: cannot reduce value of boost
 
-    point = Utils._calc_bias_slope(time, y, Utils.uinttoint(expire_time));
+    point = Utilsdel(utils)._calc_bias_slope(time, y, Utilsdel(utils).uinttoint(expire_time));
     require(point.slope < 0); // dev: invalid slope
 
     _mint_boost(_token_id, delegator, receiver, point, _cancel_time, expire_time);
@@ -1002,10 +1357,10 @@ function extend_boost(uint256 _token_id , int256 _percentage , uint256 _expiry_t
         next_expiry = expire_time;
     }
 
-    expiry_data = Utils.shift(expiry_data, -128);
+    expiry_data = Utilsdel(utils).shift(expiry_data, -128);
     account_expiries[delegator][expire_time] += 1;
-    boost[delegator].expiry_data = Utils.shift((expiry_data) + 1, 128) + next_expiry;
-    emit Utils.ExtendBoost(delegator, receiver, _token_id, Utils.inttouint(y), expire_time, _cancel_time);
+    boost[delegator].expiry_data = Utilsdel(utils).shift((expiry_data) + 1, 128) + next_expiry;
+    emit ExtendBoost(delegator, receiver, _token_id, Utilsdel(utils).inttouint(y), expire_time, _cancel_time);
     
     
 }
@@ -1048,9 +1403,9 @@ function extend_boost(uint256 _token_id , int256 _percentage , uint256 _expiry_t
 // def set_delegation_status(_receiver: address, _delegator: address, _status: bool):
 //     """
 //     @notice Set or reaffirm the blacklist/whitelist status of a delegator for a receiver.
-//     @dev Setting delegator as the Utils.ZERO_ADDRESS enables users to deactive delegations globally
+//     @dev Setting delegator as the Utilsdel(utils).ZERO_ADDRESS enables users to deactive delegations globally
 //         and enable the white list. The ability of a delegator to delegate to a receiver
-//         is determined by ~(grey_list[_receiver][Utils.ZERO_ADDRESS] ^ grey_list[_receiver][_delegator]).
+//         is determined by ~(grey_list[_receiver][Utilsdel(utils).ZERO_ADDRESS] ^ grey_list[_receiver][_delegator]).
 //     @param _receiver The account which we will be updating it's list
 //     @param _delegator The account to disallow/allow delegations from
 //     @param _status Boolean of the status to set the _delegator account to
@@ -1065,9 +1420,9 @@ function extend_boost(uint256 _token_id , int256 _percentage , uint256 _expiry_t
 // def batch_set_delegation_status(_receiver: address, _delegators: address[256], _status: uint256[256]):
 //     """
 //     @notice Set or reaffirm the blacklist/whitelist status of multiple delegators for a receiver.
-//     @dev Setting delegator as the Utils.ZERO_ADDRESS enables users to deactive delegations globally
+//     @dev Setting delegator as the Utilsdel(utils).ZERO_ADDRESS enables users to deactive delegations globally
 //         and enable the white list. The ability of a delegator to delegate to a receiver
-//         is determined by ~(grey_list[_receiver][Utils.ZERO_ADDRESS] ^ grey_list[_receiver][_delegator]).
+//         is determined by ~(grey_list[_receiver][Utilsdel(utils).ZERO_ADDRESS] ^ grey_list[_receiver][_delegator]).
 //     @param _receiver The account which we will be updating it's list
 //     @param _delegators List of 256 accounts to disallow/allow delegations from
 //     @param _status List of 256 0s and 1s (booleans) of the status to set the _delegator_i account to.
@@ -1105,17 +1460,17 @@ function extend_boost(uint256 _token_id , int256 _percentage , uint256 _expiry_t
 //     time: int256 = convert(block.timestamp, int256)
 
 //     if boost.delegated != 0:
-//         dpoint: Point = self.Utils._deconstruct_bias_slope(boost.delegated)
+//         dpoint: Point = self.Utilsdel(utils)._deconstruct_bias_slope(boost.delegated)
 
 //         # we take the absolute value, since delegated boost can be negative
 //         # if any outstanding negative boosts are in circulation
 //         # this can inflate the vecrv balance of a user
 //         # taking the absolute value has the effect that it costs
 //         # a user to negatively impact another's vecrv balance
-//         adjusted_balance -= Utils.abs(dpoint.slope * time + dpoint.bias)
+//         adjusted_balance -= Utilsdel(utils).abs(dpoint.slope * time + dpoint.bias)
 
 //     if boost.received != 0:
-//         rpoint: Point = self.Utils._deconstruct_bias_slope(boost.received)
+//         rpoint: Point = self.Utilsdel(utils)._deconstruct_bias_slope(boost.received)
 
 //         # similar to delegated boost, our received boost can be negative
 //         # if any outstanding negative boosts are in our possession
@@ -1123,7 +1478,7 @@ function extend_boost(uint256 _token_id , int256 _percentage , uint256 _expiry_t
 //         # our adjusted balance due to negative boosts. Instead we take
 //         # whichever is greater between 0 and the value of our received
 //         # boosts.
-//         adjusted_balance += Utils.max(rpoint.slope * time + rpoint.bias, empty(int256))
+//         adjusted_balance += Utilsdel(utils).max(rpoint.slope * time + rpoint.bias, empty(int256))
 
 //     # since we took the absolute value of our delegated boost, it now instead of
 //     # becoming negative is positive, and will continue to increase ...
@@ -1132,10 +1487,10 @@ function extend_boost(uint256 _token_id , int256 _percentage , uint256 _expiry_t
 //     # boost, however we return the maximum between our adjusted balance and 0
 //     # when delegating boost, received boost isn't used for determining how
 //     # much we can delegate.
-//     return convert(Utils.max(adjusted_balance, empty(int256)), uint256)
+//     return convert(Utilsdel(utils).max(adjusted_balance, empty(int256)), uint256)
 
-function adjusted_balance_of(address _account) public view returns (uint256) {
-    return Utils.adjusted_balance_of(_account, boost);
+function adjusted_balance_of(address _account) external view returns (uint256) {
+    return Utilsdel(utils).adjusted_balance_of(_account, boost[_account],VOTING_ESCROW);
 }
 
 
@@ -1150,9 +1505,9 @@ function adjusted_balance_of(address _account) public view returns (uint256) {
 //         value boosts.
 //     @param _account The account to query
 //     """
-//     dpoint: Point = self.Utils._deconstruct_bias_slope(self.boost[_account].delegated)
+//     dpoint: Point = self.Utilsdel(utils)._deconstruct_bias_slope(self.boost[_account].delegated)
 //     time: int256 = convert(block.timestamp, int256)
-//     return convert(Utils.abs(dpoint.slope * time + dpoint.bias), uint256)
+//     return convert(Utilsdel(utils).abs(dpoint.slope * time + dpoint.bias), uint256)
 
 
 
@@ -1166,12 +1521,12 @@ function adjusted_balance_of(address _account) public view returns (uint256) {
 //         if the account has any outstanding negative value boosts.
 //     @param _account The account to query
 //     """
-//     rpoint: Point = self.Utils._deconstruct_bias_slope(self.boost[_account].received)
+//     rpoint: Point = self.Utilsdel(utils)._deconstruct_bias_slope(self.boost[_account].received)
 //     time: int256 = convert(block.timestamp, int256)
-//     return convert(Utils.max(rpoint.slope * time + rpoint.bias, empty(int256)), uint256)
+//     return convert(Utilsdel(utils).max(rpoint.slope * time + rpoint.bias, empty(int256)), uint256)
 
 function received_boost(address _account) public view returns (uint256) {
-    return Utils.received_boost(boost[_account].received);
+    return Utilsdel(utils).received_boost(boost[_account].received);
 }
 
 
@@ -1185,7 +1540,7 @@ function received_boost(address _account) public view returns (uint256) {
 //         date.
 //     @param _token_id The token id to query
 //     """
-//     tpoint: Point = self.Utils._deconstruct_bias_slope(self.boost_tokens[_token_id].data)
+//     tpoint: Point = self.Utilsdel(utils)._deconstruct_bias_slope(self.boost_tokens[_token_id].data)
 //     time: int256 = convert(block.timestamp, int256)
 //     return tpoint.slope * time + tpoint.bias
 
@@ -1194,8 +1549,8 @@ function token_boost(uint256 _token_id) public view returns (int256) {
     //     @dev The effective value of a boost is negative after it's expiration
     //         date.
     //     @param _token_id The token id to query
-    Point memory tpoint = Utils._deconstruct_bias_slope(boost_tokens[_token_id].data);
-    int256 time = Utils.uinttoint(block.timestamp);
+    Point memory tpoint = Utilsdel(utils)._deconstruct_bias_slope(boost_tokens[_token_id].data);
+    int256 time = Utilsdel(utils).uinttoint(block.timestamp);
     return tpoint.slope * time + tpoint.bias;
 }
 
@@ -1266,7 +1621,7 @@ function token_cancel_time(uint256 _token_id) public view returns (uint256) {
 //     """
 //     time: int256 = convert(block.timestamp, int256)
 //     assert _percentage > 0  # dev: percentage must be greater than 0
-//     assert _percentage <= Utils.MAX_PCT  # dev: percentage must be less than or equal to 100%
+//     assert _percentage <= Utilsdel(utils).MAX_PCT  # dev: percentage must be less than or equal to 100%
 //     assert _expire_time > time + WEEK  # dev: Invalid min expiry time
 
 //     lock_expiry: int256 = convert(VotingEscrow(VOTING_ESCROW).locked__end(_delegator), int256)
@@ -1274,17 +1629,17 @@ function token_cancel_time(uint256 _token_id) public view returns (uint256) {
 
 //     ddata: uint256 = self.boost[_delegator].delegated
 
-//     if _extend_token_id != 0 and convert(Utils.shift(_extend_token_id, -96), address) == _delegator:
+//     if _extend_token_id != 0 and convert(Utilsdel(utils).shift(_extend_token_id, -96), address) == _delegator:
 //         # decrease the delegated bias and slope by the token's bias and slope
 //         # only if it is the delegator's and it is within the bounds of existence
 //         ddata -= self.boost_tokens[_extend_token_id].data
 
-//     dpoint: Point = self.Utils._deconstruct_bias_slope(ddata)
+//     dpoint: Point = self.Utilsdel(utils)._deconstruct_bias_slope(ddata)
 
 //     delegated_boost: int256 = dpoint.slope * time + dpoint.bias
 //     assert delegated_boost >= 0  # dev: outstanding negative boosts
 
-//     y: int256 = _percentage * (VotingEscrow(VOTING_ESCROW).balanceOf(_delegator) - delegated_boost) / Utils.MAX_PCT
+//     y: int256 = _percentage * (VotingEscrow(VOTING_ESCROW).balanceOf(_delegator) - delegated_boost) / Utilsdel(utils).MAX_PCT
 //     assert y > 0  # dev: no boost
 
 //     slope: int256 = -y / (_expire_time - time)
@@ -1300,7 +1655,7 @@ function calc_boost_bias_slope(
     int256 _expire_time,
     uint256 _extend_token_id
 ) public view returns (Point memory) {
-    return Utils.calc_boost_bias_slope(_delegator, _percentage, _expire_time, _extend_token_id, boost[_delegator].delegated, boost_tokens[_extend_token_id].data);
+    return Utilsdel(utils).calc_boost_bias_slope(_delegator, _percentage, _expire_time, _extend_token_id, boost[_delegator].delegated, boost_tokens[_extend_token_id].data,VOTING_ESCROW);
 
 }
 
@@ -1314,7 +1669,7 @@ function calc_boost_bias_slope(
 //     @param _id The id value, must be less than 2 ** 96
 //     """
 //     assert _id < 2 ** 96  # dev: invalid _id
-//     return Utils.shift(convert(_delegator, uint256), 96) + _id
+//     return Utilsdel(utils).shift(convert(_delegator, uint256), 96) + _id
 
 
 }

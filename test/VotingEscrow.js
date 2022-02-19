@@ -1,5 +1,8 @@
 const Votingescrow = artifacts.require("VotingEscrow");
 const ERC20CRV = artifacts.require("ERC20CRV");
+const VotingescrowDelegation = artifacts.require("VotingEscrowDelegation");
+const Delegation = artifacts.require("Delegation");
+const Utils = artifacts.require("Utils");
 
 contract("VotingEscrow", ([deployer, receiver, sender, checker, testUser]) => {
   let escrow;
@@ -9,20 +12,26 @@ contract("VotingEscrow", ([deployer, receiver, sender, checker, testUser]) => {
   let unlock_time = new Date();
   unlock_time.setDate(unlock_time.getDate() + 100);
   unlock_time = parseInt(unlock_time.getTime() / 1000);
+  let ved;
+  let delegation;
 
   let balance;
   let result;
+  let utils;
 
   beforeEach(async () => {
-    token = await ERC20CRV.new("CAPX Token", "CAPX", 18);
-    escrow = await Votingescrow.new(token.address, "CAPX Token", "CAPX", "1.0");
+    utils = await Utils.deployed();
+    token = await ERC20CRV.deployed();
+    escrow = await Votingescrow.deployed();
+    ved = await VotingescrowDelegation.deployed();
+    delegation = await Delegation.deployed();
   });
 
-  describe("deployment checks for voting escrow", async () => {
-    it("Should deploy the smart contract properly", async () => {
-      assert(escrow.address !== "", "Has not deployed correctly");
-    });
-  });
+  // describe("deployment checks for voting escrow", async () => {
+  //   it("Should deploy the smart contract properly", async () => {
+  //     assert(escrow.address !== "", "Has not deployed correctly");
+  //   });
+  // });
 
   //   describe("transfership tests", async () => {
   //     it("checks if admin can transfer ownership", async () => {
@@ -61,27 +70,13 @@ contract("VotingEscrow", ([deployer, receiver, sender, checker, testUser]) => {
   //     });
   //   });
 
-  describe("creating lock", async () => {
-    it("test to create a lock", async () => {
-      // before creating the lock
-      balance = await escrow.balanceOf(address);
-
-      // creating a lock
-      await token.approve(escrow.address, value);
-      await escrow.create_lock(value, unlock_time);
-
-      // after creating the lock
-      const balance1 = await escrow.balanceOf(address);
-      console.log(balance1.toNumber());
-
-      assert(balance.toNumber() != balance1.toNumber(), "Function not working");
-    });
-  });
-
   describe("testing different functions after creating lock", async () => {
     var debugger1;
     beforeEach(async () => {
       await token.approve(escrow.address, value);
+      let unlock_time = new Date();
+      unlock_time.setDate(unlock_time.getDate() + 1200);
+      unlock_time = parseInt(unlock_time.getTime() / 1000);
       debugger1 = await escrow.create_lock(value, unlock_time);
 
       debugger1 = debugger1.logs[0].blockNumber;
@@ -136,9 +131,26 @@ contract("VotingEscrow", ([deployer, receiver, sender, checker, testUser]) => {
       //   await escrow.increase_unlock_time(unlock_time);
       //   const next_end = await escrow.locked__end(address);
 
-      result = await escrow.balanceOfAt(address, debugger1 - 20);
+      let result = await escrow.balanceOfAt(address, debugger1);
 
       console.log(result.toNumber());
+
+      let unlock_time = new Date();
+      unlock_time.setDate(unlock_time.getDate() + 14);
+      unlock_time = parseInt(unlock_time.getTime() / 1000);
+
+      // result = await delegation.adjusted_balance_of(address);
+      await delegation.create_boost(
+        deployer,
+        receiver,
+        900,
+        unlock_time - 86400 * 7,
+        unlock_time,
+        12344432
+      );
+
+      result = await delegation.adjusted_balance_of(receiver);
+      console.log(result);
 
       assert(parseInt(result.toString()) != 0, "Function not working");
     });

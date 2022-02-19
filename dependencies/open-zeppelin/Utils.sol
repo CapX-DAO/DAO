@@ -1,22 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
-import {VotingEscrowDelegation} from "./VotingEscrowDelegation.sol";
-import "./VEDinterfaces.sol";
+import {VotingEscrowDelegation} from "../../contracts/VotingEscrowDelegation.sol";
+import {SignedSafeMath} from "./SignedSafeMath.sol";
+import {SafeMath} from "./SafeMath.sol";
+
+interface VE_util {
+    function balanceOf(address _account) external view returns (uint256);
+    function locked__end(address _addr) external view returns (uint256);
+}
 
 
-library Utils {
-    uint256 constant MAX_PCT = 10_000;
-uint256 constant WEEK = 86400 * 7;
-address constant VOTING_ESCROW = 0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2;
-address constant VOTING_ESCROW_DELEGATION = 0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2;
-uint256 constant MAX_UINT256 = 2**256 - 1;
-address constant ZERO_ADDRESS = address(0);
-
-event Approval(
+contract Utils {
+    event Approval(
     address _owner,
     address _approved,
     uint256 _token_id
 );
+
+
 
 
 // event ApprovalForAll:
@@ -113,6 +114,18 @@ event GreyListUpdated(
 );
 
 
+    uint256 constant MAX_PCT = 10_000;
+uint256 constant WEEK = 86400 * 7;
+// address constant VOTING_ESCROW = 0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2;
+// address constant VOTING_ESCROW_DELEGATION = 0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2;
+uint256 constant MAX_UINT256 = 2**256 - 1;
+address constant public ZERO_ADDRESS = address(0);
+
+constructor() {
+
+}
+
+
 
 
     function uinttoint(uint num) public pure returns (int) {
@@ -123,12 +136,12 @@ event GreyListUpdated(
     return uint(num);
   }
 
-  function timechecker(uint256 _expiry_time,uint256 _cancel_time,address delegator) public view returns (uint256) {
+  function timechecker(uint256 _expiry_time,uint256 _cancel_time,address delegator,address VOTING_ESCROW) public view returns (uint256) {
       uint256 expire_time = (_expiry_time / WEEK) * WEEK;
 
-    require(_cancel_time <= expire_time); // dev: cancel time is after expiry
-    require(expire_time >= block.timestamp + WEEK); // dev: boost duration must be atleast one day
-    require(expire_time <= VE(VOTING_ESCROW).locked__end(delegator)); // dev: boost expiration is past voting escrow lock expiry
+    require(_cancel_time <= expire_time,"0"); // dev: cancel time is after expiry
+    require(expire_time >= block.timestamp + WEEK,"1"); // dev: boost duration must be atleast one day
+    require(expire_time <= VE_util(VOTING_ESCROW).locked__end(delegator),"2"); // dev: boost expiration is past voting escrow lock expiry
 
     return expire_time;
     
@@ -190,7 +203,7 @@ event GreyListUpdated(
     if (_n >= 0) {
         return ((_x) * (uint256(2) ** inttouint(_n)));
     } else {
-        return ((_x) / (uint256(2) ** inttouint(_n)));
+        return ((_x) / (uint256(2) ** inttouint(-_n)));
     }
 }
 
@@ -201,7 +214,7 @@ function shift(int256 _x, int256 _n) public pure returns (int256) {
     if (_n >= 0) {
         return ((_x) * uinttoint(uint256(2) ** inttouint(_n)));
     } else {
-        return ((_x) / uinttoint(uint256(2) ** inttouint(_n)));
+        return ((_x) / uinttoint(uint256(2) ** inttouint(-_n)));
     }
 }
 
@@ -227,15 +240,15 @@ function _uint_to_string(uint256 _x) public pure returns (string memory) {
         return string(bstr);
 }
 
-function _deconstruct_bias_slope(uint256 _data) public pure returns (VED.Point memory) {
-    return VED.Point(uinttoint(shift(_data, -128)), -uinttoint(_data % 2 ** 128));
+function _deconstruct_bias_slope(uint256 _data) public pure returns (VotingEscrowDelegation.Point memory) {
+    return VotingEscrowDelegation.Point(uinttoint(shift(_data, -128)), -uinttoint(_data % (2 ** 128)));
 }
 
-function _calc_bias_slope(int256 _x,int256 _y,int256 _expire_time) public pure returns (VED.Point memory) {
+function _calc_bias_slope(int256 _x,int256 _y,int256 _expire_time) public pure returns (VotingEscrowDelegation.Point memory) {
     // SLOPE: (y2 - y1) / (x2 - x1)
     // BIAS: y = mx + b -> y - mx = b
     int256 slope = -_y / (_expire_time - _x);
-    return VED.Point(_y - slope * _x, slope);
+    return VotingEscrowDelegation.Point(_y - slope * _x, slope);
 }
 
 function max(uint256 a, uint256 b) public pure returns (uint256) {
@@ -284,7 +297,7 @@ function received_boost(uint256 boost_recieved) public view returns (uint256) {
     //     @dev This value can be 0, even with delegations which have a large value,
     //         if the account has any outstanding negative value boosts.
     //     @param _account The account to query
-    VED.Point memory rpoint = _deconstruct_bias_slope(boost_recieved);
+    VotingEscrowDelegation.Point memory rpoint = _deconstruct_bias_slope(boost_recieved);
     int256 time = uinttoint(block.timestamp);
     return inttouint(max(rpoint.slope * time + rpoint.bias, 0));
 }
@@ -295,11 +308,11 @@ function _is_approved_or_owner(address _spender,address owner_of_token_id, addre
         || isapprovedforall_owner_spender,"must be owner or approved");
 }
 
-function adjusted_balance_of(address _account,mapping(address => VED.Boost) storage boost) public view returns (uint256) {
-    //     @notice Adjusted veCRV balance after accounting for delegations and boosts
-    //     @dev If boosts/delegations have a negative value, they're effective value is 0
-    //     @param _account The account to query the adjusted balance of
-    uint256 next_expiry = boost[_account].expiry_data % 2 ** 128;
+function adjusted_balance_of(address _account,VotingEscrowDelegation.Boost memory boost_account,address VOTING_ESCROW) public view returns (uint256) {
+        // @notice Adjusted veCRV balance after accounting for delegations and boosts
+        // @dev If boosts/delegations have a negative value, they're effective value is 0
+        // @param _account The account to query the adjusted balance of
+    uint256 next_expiry = boost_account.expiry_data % 2 ** 128;
     if (next_expiry != 0 && next_expiry < block.timestamp) {
         // if the account has a negative boost in circulation
         // we over penalize by setting their adjusted balance to 0
@@ -308,11 +321,11 @@ function adjusted_balance_of(address _account,mapping(address => VED.Boost) stor
         return 0;
     }
 
-    int256 adjusted_balance = uinttoint( VE(VOTING_ESCROW).balanceOf(_account));
+    int256 adjusted_balance = uinttoint( VE_util(VOTING_ESCROW).balanceOf(_account));
     int256 time = uinttoint(block.timestamp);
 
-    if (boost[_account].delegated != 0) {
-        VED.Point memory dpoint = _deconstruct_bias_slope(boost[_account].delegated);
+    if (boost_account.delegated != 0) {
+        VotingEscrowDelegation.Point memory dpoint = _deconstruct_bias_slope(boost_account.delegated);
 
         // we take the absolute value, since delegated boost can be negative
         // if any outstanding negative boosts are in circulation
@@ -322,8 +335,8 @@ function adjusted_balance_of(address _account,mapping(address => VED.Boost) stor
         adjusted_balance -= abs(dpoint.slope * time + dpoint.bias);
     }
 
-    if (boost[_account].received != 0) {
-        VED.Point memory rpoint = _deconstruct_bias_slope(boost[_account].received);
+    if (boost_account.received != 0) {
+        VotingEscrowDelegation.Point memory rpoint = _deconstruct_bias_slope(boost_account.received);
 
         // similar to delegated boost, our received boost can be negative
         // if any outstanding negative boosts are in our possession
@@ -344,23 +357,24 @@ function adjusted_balance_of(address _account,mapping(address => VED.Boost) stor
     // when delegating boost, received boost isn't used for determining how
     // much we can delegate.
     return inttouint(max(adjusted_balance, 0));
+    
 
 }
 
-function ycalc(address _delegator,VED.Point memory point, int256 _percentage) public view returns (int256) {
-    int256 delegated_boost_var = (point.slope * uinttoint(block.timestamp) + point.bias);
-    uint256 delegator_balance_ve = (VE(VOTING_ESCROW).balanceOf(_delegator));
-    int256 y = (_percentage) * (uinttoint(delegator_balance_ve) - delegated_boost_var) / uinttoint(MAX_PCT);
+function ycalc(address _delegator,VotingEscrowDelegation.Point memory point, int256 _percentage,address VOTING_ESCROW) public view returns (int256) {
+    int256 delegated_boost_var = SignedSafeMath.add(SignedSafeMath.mul(point.slope, uinttoint(block.timestamp)) ,point.bias);
+    uint256 delegator_balance_ve = (VE_util(VOTING_ESCROW).balanceOf(_delegator));
+    int256 y = SignedSafeMath.mul(_percentage, SignedSafeMath.div(SignedSafeMath.sub(uinttoint(delegator_balance_ve),delegated_boost_var),uinttoint(MAX_PCT)));
     return y;
 }
 
-function delegated_boost(address _account,mapping(address => VED.Boost) storage boost) public view returns (uint256) {
+function delegated_boost(address _account,VotingEscrowDelegation.Boost memory boost_account) public view returns (uint256) {
     //     @notice Query the total effective delegated boost value of an account.
     //     @dev This value can be greater than the veCRV balance of
     //         an account if the account has outstanding negative
     //         value boosts.
     //     @param _account The account to query
-    VED.Point memory dpoint = _deconstruct_bias_slope(boost[_account].delegated);
+    VotingEscrowDelegation.Point memory dpoint = _deconstruct_bias_slope(boost_account.delegated);
     int256 time = uinttoint(block.timestamp);
     return inttouint(abs(dpoint.slope * time + dpoint.bias));
 }
@@ -371,8 +385,8 @@ function calc_boost_bias_slope(
     int256 _expire_time,
     uint256 _extend_token_id,
     uint256 boost_delegator_delegated,
-    uint256 boost_tokens_extend_token_id_data
-) public view returns (VED.Point memory) {
+    uint256 boost_tokens_extend_token_id_data,address VOTING_ESCROW
+) public view returns (VotingEscrowDelegation.Point memory) {
     //     @notice Calculate the bias and slope for a boost.
     //     @param _delegator The account to delegate boost from
     //     @param _percentage The percentage of the _delegator's delegable
@@ -390,7 +404,7 @@ function calc_boost_bias_slope(
     require(_percentage <= uinttoint(MAX_PCT), "percentage must be less than or equal to 100%");
     require(_expire_time > uinttoint(block.timestamp + (WEEK)), "Invalid min expiry time");
 
-    int256 lock_expiry = uinttoint(VE(VOTING_ESCROW).locked__end(_delegator));
+    int256 lock_expiry = uinttoint(VE_util(VOTING_ESCROW).locked__end(_delegator));
     require(_expire_time <= lock_expiry, "Invalid expiry time");
 
     
@@ -401,18 +415,18 @@ function calc_boost_bias_slope(
         boost_delegator_delegated -= boost_tokens_extend_token_id_data;
     }
 
-    VED.Point memory dpoint = _deconstruct_bias_slope(boost_delegator_delegated);
+    VotingEscrowDelegation.Point memory dpoint = _deconstruct_bias_slope(boost_delegator_delegated);
 
     int256 delegated_boost_var = dpoint.slope * uinttoint(block.timestamp) + dpoint.bias;
     require(delegated_boost_var >= 0, "outstanding negative boosts");
 
-    int256 y = _percentage * (uinttoint(VE(VOTING_ESCROW).balanceOf(_delegator)) - delegated_boost_var) / uinttoint(MAX_PCT);
+    int256 y = ycalc(_delegator,dpoint,_percentage,VOTING_ESCROW);
     require(y > 0, "no boost");
 
     int256 slope = -y / (_expire_time - uinttoint(block.timestamp));
     require(slope < 0, "invalid slope");
 
-    return VED.Point(y - slope * uinttoint(block.timestamp), slope);
+    return VotingEscrowDelegation.Point(y - slope * uinttoint(block.timestamp), slope);
 
 }
 
@@ -429,13 +443,13 @@ function calc_boost_bias_slope(
 //     time: int256 = convert(block.timestamp, int256)
 //     return tpoint.slope * time + tpoint.bias
 
-function token_boost(uint256 _token_id) public view returns (int256) {
+function token_boost(uint256 _token_id,address VOTING_ESCROW_DELEGATION) public view returns (int256) {
     //     @notice Query the effective value of a boost
     //     @dev The effective value of a boost is negative after it's expiration
     //         date.
     //     @param _token_id The token id to query
     
-VED.Point memory tpoint = _deconstruct_bias_slope(VED(VOTING_ESCROW_DELEGATION).get_boost_token_data(_token_id));
+VotingEscrowDelegation.Point memory tpoint = _deconstruct_bias_slope(VotingEscrowDelegation(VOTING_ESCROW_DELEGATION).get_boost_token_data(_token_id));
     int256 time = uinttoint(block.timestamp);
     return tpoint.slope * time + tpoint.bias;
 }
@@ -452,12 +466,12 @@ VED.Point memory tpoint = _deconstruct_bias_slope(VED(VOTING_ESCROW_DELEGATION).
 //     """
 //     return self.boost_tokens[_token_id].expire_time
 
-function token_expiry(uint256 _token_id) public view returns (uint256) {
+function token_expiry(uint256 _token_id,address VOTING_ESCROW_DELEGATION) public view returns (uint256) {
     //     @notice Query the timestamp of a boost token's expiry
     //     @dev The effective value of a boost is negative after it's expiration
     //         date.
     //     @param _token_id The token id to query
-    return VED(VOTING_ESCROW_DELEGATION).get_boost_token_data(_token_id);
+    return VotingEscrowDelegation(VOTING_ESCROW_DELEGATION).get_boost_token_data(_token_id);
 }
 
 
@@ -473,13 +487,13 @@ function token_expiry(uint256 _token_id) public view returns (uint256) {
 //     """
 //     return self.boost_tokens[_token_id].dinfo % 2 ** 128
 
-function token_cancel_time(uint256 _token_id) public view returns (uint256) {
+function token_cancel_time(uint256 _token_id,address VOTING_ESCROW_DELEGATION) public view returns (uint256) {
     //     @notice Query the timestamp of a boost token's cancel time. This is
     //         the point at which the delegator can nullify the boost. A receiver
     //         can cancel a token at any point. Anyone can nullify a token's boost
     //         after it's expiration.
     //     @param _token_id The token id to query
-    return VED(VOTING_ESCROW_DELEGATION).get_boost_token_dinfo(_token_id) % 2 ** 128;
+    return VotingEscrowDelegation(VOTING_ESCROW_DELEGATION).get_boost_token_dinfo(_token_id) % 2 ** 128;
 }
 
 

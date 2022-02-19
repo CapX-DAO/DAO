@@ -135,7 +135,7 @@ address future_admin;
     transfersEnabled = true;
 
     uint256 _decimals = ERC20(token_addr).decimals();
-    assert(_decimals <= 255);
+    require(_decimals <= 255,"error");
     decimals = _decimals;
 
     name = _name;

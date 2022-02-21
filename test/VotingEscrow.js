@@ -342,5 +342,3 @@ contract ('VotingEscrow', ([deployer, receiver, sender, checker, testUser]) => {
 
 
 // there's something wrong with the assert_not_contract function I guess; I'm always failing the if statement in all cases. 
-
-

@@ -311,4 +311,3 @@ contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver, minter]) => {
     })
 
 })
-

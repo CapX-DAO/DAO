@@ -270,8 +270,6 @@ constructor(string memory _name, string memory _symbol, string memory _base_uri,
 
 }
 
-
-
 function debugger(address _delegator) public view returns(Point memory) {
     return Utilsdel(utils)._deconstruct_bias_slope(boost[_delegator].delegated);
 }
@@ -666,9 +664,9 @@ function calc_boost_bias_slope(
 ) public view returns (Point memory) {
     return Utilsdel(utils).calc_boost_bias_slope(_delegator, _percentage, _expire_time, _extend_token_id, boost[_delegator].delegated, boost_tokens[_extend_token_id].data,VOTING_ESCROW);
 
+    }
 }
 
 
 
 
-}

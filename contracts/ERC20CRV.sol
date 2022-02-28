@@ -23,7 +23,6 @@ contract ERC20CRV is IERC20, IERC20Metadata{
     uint256 total_supply;
     mapping(uint256 => mintinfo) mintedatblocknumber;
     uint256 mintedatblocknumberlength;
-    // int mintedatblocknumberlength;
 
     address minter;
     address admin;

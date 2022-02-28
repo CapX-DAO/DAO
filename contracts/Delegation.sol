@@ -3,7 +3,6 @@
 pragma solidity ^0.8.4;
 import {VotingEscrowDelegation} from "./VotingEscrowDelegation.sol";
 import "../dependencies/open-zeppelin/ERC20.sol";
-// import {Utils} from "../dependencies/open-zeppelin/Utils.sol";
 
 interface ERC721Receiver {
     function onERC721Received(
@@ -71,13 +70,6 @@ function token_cancel_time(uint256 _token_id,address VOTING_ESCROW_DELEGATION) e
 
 }
 
-// interface ERC20 {
-//     function balanceOf(address _owner) external view returns (uint256);
-//     function transfer(address _to, uint256 _value) external returns (bool);
-//     function allowance(address _owner, address _spender) external view returns (uint256);
-//     function transferFrom(address _from, address _to, uint256 _value) external returns (bool);
-// }
-
 contract Delegation{
   event CommitAdmins(address ownership_admin, address emergency_admin);
   
@@ -91,24 +83,11 @@ contract Delegation{
     uint256 _token_id
 );
 
-
-
-
-// event ApprovalForAll:
-//     _owner: indexed(address)
-//     _operator: indexed(address)
-//     _approved: bool
-
 event ApprovalForAll(
     address _owner,
     address _operator,
     bool _approved
 );
-
-// event Transfer:
-//     _from: indexed(address)
-//     _to: indexed(address)
-//     _token_id: indexed(uint256)
 
 event Transfer(
     address _from,
@@ -116,24 +95,11 @@ event Transfer(
     uint256 _token_id
 );
 
-// event BurnBoost:
-//     _delegator: indexed(address)
-//     _receiver: indexed(address)
-//     _token_id: indexed(uint256)
-
 event BurnBoost(
     address _delegator,
     address _receiver,
     uint256 _token_id
 );
-
-// event DelegateBoost:
-//     _delegator: indexed(address)
-//     _receiver: indexed(address)
-//     _token_id: indexed(uint256)
-//     _amount: uint256
-//     _cancel_time: uint256
-//     _expire_time: uint256
 
 event DelegateBoost(
     address _delegator,
@@ -144,14 +110,6 @@ event DelegateBoost(
     uint256 _expire_time
 );
 
-// event ExtendBoost:
-//     _delegator: indexed(address)
-//     _receiver: indexed(address)
-//     _token_id: indexed(uint256)
-//     _amount: uint256
-//     _expire_time: uint256
-//     _cancel_time: uint256
-
 event ExtendBoost(
     address _delegator,
     address _receiver,
@@ -161,13 +119,6 @@ event ExtendBoost(
     uint256 _cancel_time
 );
 
-// event TransferBoost:
-//     _from: indexed(address)
-//     _to: indexed(address)
-//     _token_id: indexed(uint256)
-//     _amount: uint256
-//     _expire_time: uint256
-
 event TransferBoost(
     address _from,
     address _to,
@@ -176,11 +127,6 @@ event TransferBoost(
     uint256 _expire_time
 );
 
-// event GreyListUpdated:
-//     _receiver: indexed(address)
-//     _delegator: indexed(address)
-//     _status: bool
-
 event GreyListUpdated(
     address _receiver,
     address _delegator,
@@ -188,8 +134,6 @@ event GreyListUpdated(
 );
 uint256 constant MAX_PCT = 10_000;
 uint256 constant WEEK = 86400 * 7;
-// address constant VOTING_ESCROW = 0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2;
-// address constant VOTING_ESCROW_DELEGATION = 0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2;
 uint256 constant MAX_UINT256 = 2**256 - 1;
 address constant public ZERO_ADDRESS = address(0);
   mapping(address => uint256) public balanceOf;
@@ -197,20 +141,8 @@ address constant public ZERO_ADDRESS = address(0);
   mapping(address => mapping(address => bool)) public isApprovedForAll;
   mapping(uint256 => address) public ownerOf;
 
-  // mapping(uint256 => address) public getApproved;
-  // mapping(address => mapping(address => bool)) public isApprovedForAll;
-
-
-  // using the address of VotingEscrow's smart contract deployed on ganache for now. Will have to change once contract is actually deployed
-
-// this is the contract of votingescrow contract
-
-// change this according voting escrow deployment
   address immutable VOTING_ESCROW;
   address public utils;
-
-
-// can set the address of the votingescrow delegation contract
   address public delegation;
 
 
@@ -244,7 +176,6 @@ function approve(address _owner , address _approved, uint256 _token_id) public {
     getApproved[_token_id] = _approved;
     emit Approval(_owner, _approved, _token_id);
 }
-
 
 
   constructor (address _delegation, address _o_admin,address _e_admin,string memory _base_uri,address _voting_escrow,address _utils) {
@@ -539,8 +470,5 @@ function batch_set_delegation_status(address _reciever,address[] memory _delegat
         VeDelegation(delegation)._set_delegation_status(_reciever, _delegators[i], (_status[i] != 0));
     }
 }
-
-
-
 
 }

@@ -97,19 +97,19 @@ mapping(address => mapping(address => LockedBalance)) delegations;
 address controller;
 bool transfersEnabled;
 
-string name;
-string symbol;
-string version;
-uint256 decimals;
+public string name;
+public string symbol;
+public string version;
+public uint8 decimals;
 
 // // Checker for whitelisted (smart contract) wallets which are allowed to deposit
 // // The goal is to prevent tokenizing the escrow
 
-address future_smart_wallet_checker;
-address smart_wallet_checker;
+public address future_smart_wallet_checker;
+public address smart_wallet_checker;
 
-address admin;  
-address future_admin;
+public address admin;  
+public address future_admin;
 
 
   constructor(address token_addr,string memory _name,string memory _symbol,string memory _version){
@@ -135,7 +135,6 @@ address future_admin;
     transfersEnabled = true;
 
     uint256 _decimals = ERC20(token_addr).decimals();
-    require(_decimals <= 255,"error");
     decimals = _decimals;
 
     name = _name;
@@ -717,15 +716,3 @@ address future_admin;
   }
 
 }
-
-// interface ERC20 {
-//     function decimals() external  view returns (uint256);
-//     function name() external view returns (string memory);
-//     // def name() -> String[64]: view
-//     function symbol() external view returns (string memory);
-//     // def symbol() -> String[32]: view
-    
-//     function transfer(address to , uint256 amount) external returns (bool);
-//     // def transfer(to: address, amount: uint256) -> bool: nonpayable
-//     function transferFrom( address spender, address to, uint256 amount) external returns (bool);
-// }

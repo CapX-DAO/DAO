@@ -58,8 +58,6 @@ contract VotingEscrowDelegation {
     address constant public ZERO_ADDRESS = address(0);
     uint256 constant MAX_PCT = 10_000;
 uint256 constant WEEK = 86400 * 7;
-// address constant VOTING_ESCROW = 0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2;
-// address constant VOTING_ESCROW_DELEGATION = 0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2;
 uint256 constant MAX_UINT256 = 2**256 - 1;
 
     event Approval(
@@ -202,14 +200,6 @@ address public future_admin;
 // # Delegation will go through if: not (grey_list[_receiver][ZERO_ADDRESS] ^ grey_list[_receiver][_delegator])
 // grey_list: public(HashMap[address, HashMap[address, bool]])
 
-// The grey list - per-user black and white lists
-// users can make this a blacklist or a whitelist - defaults to blacklist
-// gray_list[_receiver][_delegator]
-// by default is blacklist, with no delegators blacklisted
-// if [_receiver][ZERO_ADDRESS] is False = Blacklist, True = Whitelist
-// if this is a blacklist, receivers disallow any delegations from _delegator if it is True
-// if this is a whitelist, receivers only allow delegations from _delegator if it is True
-// Delegation will go through if: not (grey_list[_receiver][ZERO_ADDRESS] ^ grey_list[_receiver][_delegator])
 mapping(address => mapping(address => bool)) public grey_list;
 
 function get_boost_token_data(uint256 _token_id) public view returns (uint256) {
@@ -242,11 +232,6 @@ function accept_transfer_ownership() public {
     require(msg.sender == future_admin, "future admin only");
     admin = future_admin;
 }
-
-
-
-
-
 
 function set_base_uri(string memory _base_uri) public {
     //     @notice Set the base URI for the contract
@@ -366,9 +351,6 @@ function update_enumeration_data(address _from,address _to,uint256 _token_id,uin
             tokenOfOwnerByIndex[_to][local_pos] = _token_id;
             boost_tokens[_token_id].position = Utilsdel(utils).shift(global_pos, 128) + local_pos;
         }
-        
-
-        
 }
 
 

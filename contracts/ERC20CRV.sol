@@ -8,9 +8,9 @@ contract ERC20CRV is IERC20, IERC20Metadata{
     event SetMinter(address minter);
     event SetAdmin(address admin);
 
-    string _name;
-    string _symbol;
-    uint8 _decimals;
+    string public name;
+    string public symbol;
+    uint8 public decimals;
 
     struct mintinfo {
         uint256 blocknumber;
@@ -24,8 +24,8 @@ contract ERC20CRV is IERC20, IERC20Metadata{
     mapping(uint256 => mintinfo) mintedatblocknumber;
     uint256 mintedatblocknumberlength;
 
-    address minter;
-    address admin;
+    address public minter;
+    address public admin;
 
     // General constants
     uint256 constant YEAR = 86400 * 365;
@@ -65,9 +65,9 @@ contract ERC20CRV is IERC20, IERC20Metadata{
 
 
         uint256 init_supply = INITIAL_SUPPLY * 10 ** _decimals;
-        _name = name_;
-        _symbol = symbol_;
-        _decimals = decimals_;
+        name = name_;
+        symbol = symbol_;
+        decimals = decimals_;
         balances[msg.sender] = init_supply;
         total_supply = init_supply;
         admin = msg.sender;
@@ -80,37 +80,12 @@ contract ERC20CRV is IERC20, IERC20Metadata{
         
     }
 
-    function name() public view virtual override returns (string memory) {
-        // @notice Return token name
-        return _name;
-    }
-
-    function symbol() public view virtual override returns (string memory) {
-        return _symbol;
-    }
-
-    function decimals() public view virtual override returns (uint8) {
-        return _decimals;
-    }
-
     function totalSupply() public view virtual override returns (uint256) {
         return total_supply;
     }
 
     function balanceOf(address _owner) public view virtual override returns (uint256) {
         return balances[_owner];
-    }
-
-    function get_admin() public view returns (address) {
-        return admin;
-    }
-
-    function get_minter() public view returns (address) {
-        return minter;
-    }
-
-    function get_block_timestamp() public view returns (uint256){
-        return block.timestamp;
     }
 
     function _update_mining_parameters() private {
@@ -362,8 +337,8 @@ contract ERC20CRV is IERC20, IERC20Metadata{
         //     @param _name New token name
         //     @param _symbol New token symbol
         require(msg.sender == admin, "Only admin is allowed to change name");
-        _name = name_;
-        _symbol = symbol_;        
+        name = name_;
+        symbol = symbol_;        
     }
 
 }

@@ -153,14 +153,6 @@ address constant public ZERO_ADDRESS = address(0);
   string public base_uri;
 
 
-  function getOwnershipAdmin() public view returns (address) {
-    return ownership_admin;
-  }
-
-  function getEmergencyAdmin() public view returns (address) {
-    return emergency_admin;
-  }
-
   function getDelegation() public view returns (address) {
     return delegation;
   }
@@ -207,7 +199,6 @@ function mint(address _to , uint256 _token_id) public {
     ownerOf[_token_id] = _to;
     emit Transfer(ZERO_ADDRESS, _to, _token_id);
 }
-
 
 
 function getbalance(address _owner) public view returns (uint256) {

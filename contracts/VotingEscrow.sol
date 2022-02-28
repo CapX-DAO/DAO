@@ -94,7 +94,7 @@ mapping(address => uint256) user_point_epoch;
 mapping(uint256 => int128) slope_changes;
 mapping(address => mapping(address => LockedBalance)) delegations;
 
-address controller;
+public address controller;
 bool transfersEnabled;
 
 public string name;
@@ -141,27 +141,6 @@ public address future_admin;
     symbol = _symbol;
     version = _version;
   }
-
-
-  // function get_block_number() public view returns (uint256) {
-  //   return block.number;
-  // }
-
-  // function get_admin() public view returns (address) {
-  //   return admin;
-  // }
-
-  function get_controller() public view returns (address) {
-    return controller;
-  }
-
-  function get_smart_wallet_checker() public view returns (address){
-    return smart_wallet_checker;
-  }
-
-  // function get_block_timestamp() public view returns (uint256){
-  //   return block.timestamp;
-  // }
 
   function commit_transfer_ownership(address addr) public {
     require(msg.sender == admin, "Only admin can commit transfer ownership");

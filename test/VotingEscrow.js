@@ -91,8 +91,7 @@ contract ('VotingEscrow', ([deployer, receiver, sender, checker, testUser]) => {
                     await escrow.create_lock(value, unlock_time, {from: testUser});
                     assert(false, "Should be the msg.sender")
                 }catch(err){
-                    console.error("error")
-                    console.error(err);
+                    assert(true)
                 }
             })
 
@@ -110,8 +109,7 @@ contract ('VotingEscrow', ([deployer, receiver, sender, checker, testUser]) => {
                     // if it reaches this assert then the function is not working
                     assert(false, "unlock time is very huge")
                 }catch(err){
-                    console.error("error")
-                    console.error(err)
+                    assert(true)
                 }
             })
             
@@ -188,8 +186,6 @@ contract ('VotingEscrow', ([deployer, receiver, sender, checker, testUser]) => {
                 assert(false, "Function not working");
             }
             catch (err){
-                console.error('error')
-                console.error(err);
                 assert(true);
             }
 
@@ -207,9 +203,7 @@ contract ('VotingEscrow', ([deployer, receiver, sender, checker, testUser]) => {
                 assert(balance1.toNumber() > balance.toNumber())
 
             }catch(err){
-                console.error("This should have worked")
-                console.error(err)
-                assert(false)
+                assert(false, "Function should have worked")
             }
         })
 
@@ -236,8 +230,7 @@ contract ('VotingEscrow', ([deployer, receiver, sender, checker, testUser]) => {
                 assert(true);
 
             }catch(err){
-                console.error("error")
-                console.error(err)
+                assert(false, "Function not working for some reason")
             }
         })
   
@@ -248,8 +241,7 @@ contract ('VotingEscrow', ([deployer, receiver, sender, checker, testUser]) => {
                 result = await escrow.user_point_history__ts(address, id);
                 assert(true)
             }catch(err){
-                console.error("error")
-                console.error(err)
+                assert(false, "Function not working for some reason")
             }   
         })
         
@@ -264,8 +256,7 @@ contract ('VotingEscrow', ([deployer, receiver, sender, checker, testUser]) => {
                 assert(true)
 
             }catch(err){
-                console.error("error")
-                console.error(err)
+                assert(false, "Function not working for some reason")
             }
         })
 
@@ -275,10 +266,9 @@ contract ('VotingEscrow', ([deployer, receiver, sender, checker, testUser]) => {
                 result = await escrow.totalSupply();
                 assert(result.toNumber() >= 0, "Something wrong")
             }catch(err){
-                console.error("error")
-                console.error(err);
+                console.log("Function not calculating the total voting power correctly")
             }
-        })
+        }
         
 
         it('tries to deposit some amount to an address', async() => {
@@ -290,9 +280,7 @@ contract ('VotingEscrow', ([deployer, receiver, sender, checker, testUser]) => {
                 assert(vp2.toNumber() > vp1.toNumber(), "Function not working correctly")
 
             }catch(err){
-                console.error('error')
-                console.error(err)
-                assert(false)
+                console.log("Test not working")
             }
         })
 
@@ -321,8 +309,7 @@ contract ('VotingEscrow', ([deployer, receiver, sender, checker, testUser]) => {
                 controller = await escrow.get_controller();
                 assert(controller === testUser, "Function not setting controller properly")
             }catch(err){
-                console.error("Error")
-                console.error(err)
+                console.log("Tests not working")
             }
 
 
@@ -332,7 +319,6 @@ contract ('VotingEscrow', ([deployer, receiver, sender, checker, testUser]) => {
                 controller = await escrow.get_controller();
                 assert(false, "Function should not have run because msg.sender must be the controller")
             }catch(err){
-                console.error("error")
                 assert(true)
             }
         })

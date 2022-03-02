@@ -30,7 +30,7 @@ contract GovernanceStrategy is IGovernanceStrategy {
     VECRV = vecrv;
   }
 
-  function get_block_number() public view returns (uint256) {
+  function getBlockNumber() public view returns (uint256) {
     return block.number;
   }
 

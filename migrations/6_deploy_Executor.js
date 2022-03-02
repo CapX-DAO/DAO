@@ -1,7 +1,7 @@
 var Executor = artifacts.require("Executor")
 var AaveGovernanceV2 = artifacts.require("AaveGovernanceV2")
 
-let execution_delay = 0
+let executionDelay = 0
 let gracePeriod = 750
 let minimumDelay = 0
 let maximumDelay = 750
@@ -14,6 +14,6 @@ module.exports = async function(deployer) {
     
     let AaveGovernanceinstance = await AaveGovernanceV2.deployed()
 
-    await deployer.deploy(Executor, AaveGovernanceinstance.address, execution_delay, gracePeriod, minimumDelay, maximumDelay, 
+    await deployer.deploy(Executor, AaveGovernanceinstance.address, executionDelay, gracePeriod, minimumDelay, maximumDelay, 
         propositionThreshold, voteDuration, voteDifferential, minimumQuorum);
 };

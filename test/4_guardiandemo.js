@@ -6,9 +6,11 @@ const Executor = artifacts.require('Executor')
 const Dummy1 = artifacts.require('Dummy1')
 const helper = require('../utils')
 
+// the guardian wants to cancel the proposal during the voting period
+// after successful cancellation, the proposal cannot be queued and executed. 
 
 
-contract ('AaveGovernanceV2', ([deployer]) => {
+contract ('AaveGovernanceV2', ([deployer, guardian_address]) => {
 
     let token; 
     let escrow;     
@@ -17,14 +19,14 @@ contract ('AaveGovernanceV2', ([deployer]) => {
     let exec;
     let dummy1; 
     let address = deployer;
-    let voting_delay = 0
-    let guardian_addr = deployer
+    let votingDelay = 0
+    let guardianAddr = guardian_address
     let executors = [deployer]
 
     let value = 126144001
-    let unlock_time = new Date();
-    unlock_time.setDate(unlock_time.getDate() + 100);
-    unlock_time = parseInt(unlock_time.getTime() / 1000);
+    let unlockTime = new Date();
+    unlockTime.setDate(unlockTime.getDate() + 100);
+    unlockTime = parseInt(unlockTime.getTime() / 1000);
 
 
     let admin
@@ -39,13 +41,13 @@ contract ('AaveGovernanceV2', ([deployer]) => {
     let result 
     
     let targets
-    let old_count
-    let new_count
+    let oldCount
+    let newCount
 
     let id
     let voteSubmitted
 
-    describe('demo.js', async()=> {
+    describe('guardiandemo', async()=> {
 
         it('checks if the ERC20CRV contract corectly', async() => {
          token =  await ERC20CRV.new('Token', 'TOK', 18)
@@ -61,7 +63,7 @@ contract ('AaveGovernanceV2', ([deployer]) => {
 
             it('checks if able to create the lock', async() => {
                 await token.approve(escrow.address, value)
-                await escrow.create_lock(value, unlock_time)
+                await escrow.createLock(value, unlockTime)
             })
 
             it('checks if able to deploy governance strategy', async() => {
@@ -71,16 +73,16 @@ contract ('AaveGovernanceV2', ([deployer]) => {
 
             it('checks if the balance of the user from voting escrow and governance strategy are the same', async() => {
                 
-                let blk_number = await gstrat.get_block_number();
+                let blkNumber = await gstrat.getBlockNumber();
                 let balance1, balance2
 
-                balance1 = await gstrat.getVotingPowerAt(address, blk_number.toNumber())
-                balance2 = await escrow.balanceOfAt(address, blk_number.toNumber())
+                balance1 = await gstrat.getVotingPowerAt(address, blkNumber.toNumber())
+                balance2 = await escrow.balanceOfAt(address, blkNumber.toNumber())
                 assert(balance1.toNumber() === balance2.toNumber(), "Function is not working correctly")
             })
 
             it('checks if able to deploy aaveGovernance strategy', async() => {
-                aaveV2 = await AaveGovernanceV2.new(gstrat.address, voting_delay, guardian_addr ,executors)
+                aaveV2 = await AaveGovernanceV2.new(gstrat.address, votingDelay, guardianAddr ,executors)
                 assert(aaveV2.address != "", "Not able to deploy the AaveGovernanceV2 contract")
             })
 
@@ -131,28 +133,28 @@ contract ('AaveGovernanceV2', ([deployer]) => {
                 }
 
                 let add = exec.address
-                let new_owner = await dummy1.owner()
-                assert(new_owner.toString() == add.toString(), "Executor is not the owner")
+                let newOwner = await dummy1.owner()
+                assert(newOwner.toString() == add.toString(), "Executor is not the owner")
             })
 
             it('creates a new proposal for testing', async() => {
                 targets = [dummy1.address] 
-                old_count = await aaveV2.getProposalsCount()  
-                await aaveV2.create(exec.address, targets, [0],["Setval(uint256)"],["0x0000000000000000000000000000000000000000000000000000000000000005"] , [false] , "0x7465737400000000000000000000000000000000000000000000000000000000")
-                new_count = await aaveV2.getProposalsCount()
-                assert(new_count.toNumber() - old_count.toNumber() == 1, "Proposal was not created")
+                oldCount = await aaveV2.getProposalsCount()  
+                await aaveV2.create(exec.address, targets, [0],["setVal(uint256)"],["0x0000000000000000000000000000000000000000000000000000000000000005"] , [false] , "0x7465737400000000000000000000000000000000000000000000000000000000")
+                newCount = await aaveV2.getProposalsCount()
+                assert(newCount.toNumber() - oldCount.toNumber() == 1, "Proposal was not created")
             })
 
             it('trying to submit vote on a proposal and prints the vote', async() => {
                 
                 // to get the id of the most recent proposal, can use any other id for testing as well
-                id = new_count.toNumber() - 1
+                id = newCount.toNumber() - 1
             
-                votesubmitted = true;
+                voteSubmitted = true;
                 // vote for the proposal    
                 // should work for our case, may change to a negative test with wrong values later
                 try{
-                    await aaveV2.submitVote(id, votesubmitted)
+                    await aaveV2.submitVote(id, voteSubmitted)
                     assert(true)
                 }catch(err){
                     assert(false)
@@ -164,9 +166,31 @@ contract ('AaveGovernanceV2', ([deployer]) => {
 
             })
 
-            it('trying to queue the proposal', async() => {
-                block_number = await gstrat.get_block_number()
-                console.log("Current block number now:", block_number.toNumber())    
+
+            //NOW GUARDIAN WANTS TO CANCEL THE PROPOSAL
+            it('trying to cancel proposal', async() => {
+
+                // first wrong guardian address: negative test
+                try{
+                    await aaveV2.cancel(id)
+                    assert(false, "Should not have worked because should be guardian address")
+                }catch(err){
+                    assert(true)
+                }
+
+                // correct guardian address: positive test
+                try{
+                    await aaveV2.cancel(id, {from: guardian_address})
+                    assert(true)
+                }catch(err){
+                    assert(false, "It is the guardian address, should have worked")
+                }
+            })
+
+
+            it('queueing failed because proposal has been canceled by guardian ', async() => {
+                blockNumber = await gstrat.getBlockNumber()
+                console.log("Current block number now:", blockNumber.toNumber())    
                 
                 // this should fail, negative test
                 // increase block number by 1
@@ -177,39 +201,20 @@ contract ('AaveGovernanceV2', ([deployer]) => {
                     assert(true)
                 }
 
-
                 // // increases block number by 1 again
-                let new_block = await gstrat.get_block_number()
-                console.log("New block number is: ", new_block.toNumber())
-                
+                let newBlock = await gstrat.getBlockNumber()
+                console.log("New block number is: ", newBlock.toNumber())
     
-                // this should work because of the block advancement
-                // now block count = 1 + 1 = 2 = voting duration, hence should work
+
+                // will not work because proposal has been canceled
                 try{
                     await aaveV2.queue(id)
-                    assert(true)
+                    assert(false)
                 }catch(err){
-                    assert(false, "Something wrong")
+                    assert(true, "Something wrong")
                 }
             })
             
-            //since delay is 0 so we can check execution just after queueing
-            it('checks if able to execute the proposal now', async() => {
-                try{
-                    await aaveV2.execute(id)
-                    assert(true)
-                }catch(err){
-                    assert(false, "Something wrong")
-                }
-            })
-
-            // should work
-            // if successful should print the value 5
-            it('checks the value of dummy contract after execution', async() => {
-                result = await dummy1.getval()
-                console.log("The new value in the dummy contract is: ", result.toNumber())
-                assert(result.toNumber() === 5, "Execution failed")
-            })
         })  
     })
 })

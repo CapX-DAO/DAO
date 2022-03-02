@@ -1,4 +1,4 @@
-const Votingescrow = artifacts.require("VotingEscrow");
+const VotingEscrow = artifacts.require("VotingEscrow");
 const ERC20CRV = artifacts.require("ERC20CRV");
 
 contract ('VotingEscrow', ([deployer, receiver, sender, checker, testUser]) => {
@@ -6,17 +6,17 @@ contract ('VotingEscrow', ([deployer, receiver, sender, checker, testUser]) => {
     let token;
     let address = deployer;
     let value = 126144001;
-    let unlock_time = new Date();
-    unlock_time.setDate(unlock_time.getDate() + 100);
-    unlock_time = parseInt(unlock_time.getTime() / 1000);
+    let unlockTime = new Date();
+    unlockTime.setDate(unlockTime.getDate() + 100);
+    unlockTime = parseInt(unlockTime.getTime() / 1000);
 
     let balance
     let result
 
     beforeEach(async() => {
-        token = await ERC20CRV.new("CAPX Token", "CAPX", 18);
-        escrow = await Votingescrow.new(token.address, "CAPX Token", "CAPX", "1.0");
-        
+        token = await ERC20CRV.new("Token", "TOK", 18);
+        escrow = await VotingEscrow.new(token.address, "Token", "TOK", "1.0");
+
     })
 
     describe('deployment checks for voting escrow', async () => {
@@ -31,19 +31,19 @@ contract ('VotingEscrow', ([deployer, receiver, sender, checker, testUser]) => {
         
         it('checks if admin can transfer ownership', async() => {
 
-            const future_admin = sender;
-            let current_admin = await escrow.get_admin();
+            const futureAdmin = sender;
+            let currentAdmin = await escrow.getAdmin();
             
-            await escrow.commit_transfer_ownership(future_admin, {from : deployer});
+            await escrow.commitTransferOwnership(futureAdmin, {from : deployer});
 
-            current_admin = await escrow.get_admin();
+            currentAdmin = await escrow.getAdmin();
             
 
-            await escrow.apply_transfer_ownership({from: deployer});
-            current_admin = await escrow.get_admin();
+            await escrow.applyTransferOwnership({from: deployer});
+            currentAdmin = await escrow.getAdmin();
 
             
-            assert(current_admin.toString() === future_admin, "Function not working");
+            assert(currentAdmin.toString() === futureAdmin, "Function not working");
         })
     })    
         
@@ -51,19 +51,19 @@ contract ('VotingEscrow', ([deployer, receiver, sender, checker, testUser]) => {
     describe('smart wallet checker tests', async() => {
         it('checks if admin can apply smart wallet checker', async() => {
             
-            const smart_wallet_checker_address = checker;
-            let current_checker = await escrow.get_smart_wallet_checker();
+            const smartWalletCheckerAddress = checker;
+            let currentChecker = await escrow.getSmartWalletChecker();
             
-            await escrow.commit_smart_wallet_checker(smart_wallet_checker_address, {from : deployer});
+            await escrow.commitSmartWalletChecker(smartWalletCheckerAddress, {from : deployer});
 
-            current_checker = await escrow.get_smart_wallet_checker();
+            currentChecker = await escrow.getSmartWalletChecker();
             
 
-            await escrow.apply_smart_wallet_checker({from: deployer});
-            current_checker = await escrow.get_smart_wallet_checker();
+            await escrow.applySmartWalletChecker({from: deployer});
+            currentChecker = await escrow.getSmartWalletChecker();
 
             
-            assert(current_checker.toString() === smart_wallet_checker_address.toString(), "Function not working");
+            assert(currentChecker.toString() === smartWalletCheckerAddress.toString(), "Function not working");
         })
     })
 
@@ -78,7 +78,7 @@ contract ('VotingEscrow', ([deployer, receiver, sender, checker, testUser]) => {
 
             // creating a lock
             await token.approve(escrow.address , value);
-            await escrow.create_lock(value, unlock_time);
+            await escrow.createLock(value, unlockTime);
 
             // after creating the lock
             const balance1 = await escrow.balanceOf(address);
@@ -93,7 +93,7 @@ contract ('VotingEscrow', ([deployer, receiver, sender, checker, testUser]) => {
         beforeEach(async() => {
 
             await token.approve(escrow.address , value);
-            await escrow.create_lock(value, unlock_time);
+            await escrow.createLock(value, unlockTime);
         })
 
         // throwing gas consumption error
@@ -101,40 +101,40 @@ contract ('VotingEscrow', ([deployer, receiver, sender, checker, testUser]) => {
             balance = await escrow.balanceOf(address);
             await token.approve(escrow.address , value);
             value = 126144001;
-            await escrow.increase_amount(value);
+            await escrow.increaseAmount(value);
             balance1 = await escrow.balanceOf(address);
             
             assert(balance1.toNumber() != balance.toNumber(), "Function not working")
         })
 
         it('increase the unlock time', async() => {
-            const current_end = await escrow.locked__end(address);
+            const currentEnd = await escrow.lockedEnd(address);
             
-            unlock_time = 1676242000;
-            await escrow.increase_unlock_time(unlock_time);
-            const next_end = await escrow.locked__end(address);
+            unlockTime = 1676242000;
+            await escrow.increaseUnlockTime(unlockTime);
+            const next_end = await escrow.lockedEnd(address);
             
         })            
 
         it('gets the voting power at an epoch', async() => {
-            let epoch_time = new Date();
-            epoch_time.setDate(epoch_time.getDate() + 1);
-            epoch_time = epoch_time.getTime() / 1000;
+            let epochTime = new Date();
+            epochTime.setDate(epochTime.getDate() + 1);
+            epochTime = epochTime.getTime() / 1000;
             const addr = deployer;
-            result = await escrow.getVotingPowerAt(addr, unlock_time);
+            result = await escrow.getVotingPowerAt(addr, unlockTime);
             
         })
         
         it('gets the voting power of the msg.sender', async() => {
-            let voting_power = await escrow.balanceOf(address,unlock_time, {from: deployer});
+            let votingPower = await escrow.balanceOf(address,unlockTime, {from: deployer});
             
         })
 
         it('gets the voting power at a block height', async() => {
-            let block_number = await escrow.get_block_number();
+            let blockNumber = await escrow.getBlockNumber();
             
-            const block_height = block_number.toNumber();
-            result = await escrow.balanceOfAt(address, block_height);
+            const blockHeight = blockNumber.toNumber();
+            result = await escrow.balanceOfAt(address, blockHeight);
             
             assert(parseInt(result.toString()) != 0, "Function not working");
         })
@@ -152,17 +152,17 @@ contract ('VotingEscrow', ([deployer, receiver, sender, checker, testUser]) => {
         })
         
         it('calculates the total voting power at an epoch time', async() => {
-            epoch_time = 1646241122
-            result = await escrow.totalSupplyAtEpoch(epoch_time);
+            epochTime = 1646241122
+            result = await escrow.totalSupplyAtEpoch(epochTime);
             
             assert.isNumber(result.toNumber()); 
         })
         
         it('calculates the total voting power at a block in the past', async() => {
-            let block_number = await escrow.get_block_number();
+            let blockNumber = await escrow.getBlockNumber();
             
-            const block_height = block_number.toNumber();
-            result = await escrow.totalSupplyAt(block_height);
+            const blockHeight = blockNumber.toNumber();
+            result = await escrow.totalSupplyAt(blockHeight);
             
             assert(parseInt(result.toString()) != 0, "Function not working");
         })

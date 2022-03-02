@@ -4,12 +4,12 @@ contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver]) => {
 
     let token;
     
-    const name = "CAPX Token";
-    const symbol = "CAPX";
+    const name = "Token";
+    const symbol = "TOK";
     const decimals = "18"
 
     beforeEach(async() => {
-        token = await ERC20CRV.new("CAPX Token", "CAPX", 18);
+        token = await ERC20CRV.new("Token", "TOK", 18);
     })
 
     describe('deployment checks for ERC20CRV', () => {
@@ -20,12 +20,12 @@ contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver]) => {
 
         it('Check the name of the token', async() => {
             const result = await token.name();
-            assert(result === "CAPX Token");
+            assert(result === "Token");
         })
 
         it('Check the symbol of the token', async() => {
             const result = await token.symbol();
-            assert(result === "CAPX");
+            assert(result === "TOK");
         })
 
         it('Check the decimals', async() => {
@@ -100,28 +100,28 @@ contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver]) => {
             let balance1 = await token.balanceOf(deployer);
             let balance2 = await token.balanceOf(receiver);
             await token.approve(sender, 100, {from : deployer});
-            let value_to_send = 20;
+            let valueToSend = 20;
             // transfer
-            const result = await token.transferFrom(deployer, receiver, value_to_send ,{from : sender});
+            const result = await token.transferFrom(deployer, receiver, valueToSend ,{from : sender});
 
             // after transferFrom()
             balance3 = await token.balanceOf(deployer);
             balance4 = await token.balanceOf(receiver);
 
 
-            assert(balance1.toNumber() - balance3.toNumber() == value_to_send && balance4.toNumber() - balance2.toNumber() == value_to_send , "Did not pass the test case");
+            assert(balance1.toNumber() - balance3.toNumber() == valueToSend && balance4.toNumber() - balance2.toNumber() == valueToSend , "Did not pass the test case");
         })
 
     
         it('check if approve spender to transfer tokens on behalf of a user', async() => {
             // approve function
-            const spender_address = sender;
+            const spenderAddress = sender;
             const value = 10;
             const balance1 = await token.balanceOf(sender);
             const balance2 = await token.balanceOf(deployer);
 
 
-            const result = await token.approve(spender_address, value, {from : deployer});
+            const result = await token.approve(spenderAddress, value, {from : deployer});
             const balance3 = await token.balanceOf(sender);
             const balance4 = await token.balanceOf(deployer);
         })
@@ -145,25 +145,25 @@ contract ('ERC20CRV', ([deployer, receiver, sender, mintreceiver]) => {
         it('if the user is the admin', async() => {
 
             // getting the admin address: 
-            const admin = await token.get_admin();
+            const admin = await token.getAdmin();
             assert(admin.toString() === deployer.toString(), "You are not the admin");
-            await token.set_admin(sender);
-            let new_admin = await token.get_admin();
-            assert(new_admin.toString() === sender.toString(), "Function not working correctly");
+            await token.setAdmin(sender);
+            let newAdmin = await token.getAdmin();
+            assert(newAdmin.toString() === sender.toString(), "Function not working correctly");
         })
     })
 
 
     describe('Check if the admin is able to set a new name and symbol of the token', async() => {
         it('if it is the admin', async() => {
-            const token_name = "Hello"
+            const tokenName = "Hello"
             const symbol = "HELL"
-            const current_admin = await token.get_admin();
-            await token.set_name(token_name, symbol);
-            let new_token = await token.name();
-            let new_symbol = await token.symbol();
-            assert(new_token.toString() === token_name.toString());
-            assert(new_symbol.toString() === symbol.toString());
+            const currentAdmin = await token.getAdmin();
+            await token.setName(tokenName, symbol);
+            let newToken = await token.name();
+            let newSymbol = await token.symbol();
+            assert(newToken.toString() === tokenName.toString());
+            assert(newSymbol.toString() === symbol.toString());
         })
 
     })

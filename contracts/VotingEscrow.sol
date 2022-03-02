@@ -12,9 +12,6 @@ import {SignedSafeMath} from "../dependencies/open-zeppelin/SignedSafeMath.sol";
         committed to the future of (whatever they are voting for)
 @dev Vote weight decays linearly over time. Lock time cannot be
      more than `MAXTIME` (4 years).
-
-
-
 // Voting escrow to have time-weighted votes
 // Votes have a weight depending on time, so that users are committed
 // to the future of (whatever they are voting for).
@@ -52,6 +49,8 @@ struct Point{
     uint256 ts;
     uint256 blk;
 }   
+
+    
 
 
 // // Interface for checking whether address belongs to a whitelisted
@@ -97,7 +96,7 @@ bool transfersEnabled;
 string name;
 string symbol;
 string version;
-uint256 decimals;
+uint8 decimals;
 
 // // Checker for whitelisted (smart contract) wallets which are allowed to deposit
 // // The goal is to prevent tokenizing the escrow
@@ -131,8 +130,7 @@ address future_admin;
     controller = msg.sender;
     transfersEnabled = true;
 
-    uint256 _decimals = ERC20(token_addr).decimals();
-    assert(_decimals <= 255);
+    uint8 _decimals = ERC20(token_addr).decimals();
     decimals = _decimals;
 
     name = _name;
@@ -140,9 +138,6 @@ address future_admin;
     version = _version;
   }
 
-  // function get_block_number() public view returns (uint256) {
-  //   return block.number;
-  // }
 
   function get_block_number() public view returns (uint256) {
     return block.number;
@@ -150,6 +145,10 @@ address future_admin;
 
   function get_admin() public view returns (address) {
     return admin;
+  }
+
+  function get_controller() public view returns (address) {
+    return controller;
   }
 
   function get_smart_wallet_checker() public view returns (address){
@@ -193,6 +192,9 @@ address future_admin;
       }
     }
   }
+
+  
+  
 
   function uinttoint(uint num) private pure returns (int) {
     return int(num);
@@ -348,10 +350,6 @@ address future_admin;
     }
   }
 
-  function debugger(uint256 _value) public pure returns (int128) {
-    return SafeCast.toInt128(uinttoint(_value)) / SafeCast.toInt128(uinttoint(MAXTIME));
-  }
-
   function _deposit_for(address _addr ,uint256 _value, uint256 unlock_time, LockedBalance memory locked_balance,int128 _type) private {
     // """
     // @notice Deposit and lock tokens for a user
@@ -419,6 +417,7 @@ address future_admin;
     // @param _unlock_time Epoch time when tokens unlock, rounded down to whole weeks
     // """
     assert_not_contract(msg.sender);
+    
     uint256 unlock_time = (_unlock_time / WEEK) * WEEK; // Locktime is rounded down to weeks
     LockedBalance memory _locked = locked[msg.sender];
 
@@ -651,7 +650,7 @@ address future_admin;
     return inttouint(last_point.bias);
   }
 
-  function totalSupply(uint256 t) public view returns(uint256) {
+  function totalSupplyAtEpoch(uint256 t) public view returns(uint256) {
     // """
     // @notice Calculate total voting power
     // @dev Adheres to the ERC20 `totalSupply` interface for Aragon compatibility
@@ -710,15 +709,3 @@ address future_admin;
   }
 
 }
-
-// interface ERC20 {
-//     function decimals() external  view returns (uint256);
-//     function name() external view returns (string memory);
-//     // def name() -> String[64]: view
-//     function symbol() external view returns (string memory);
-//     // def symbol() -> String[32]: view
-    
-//     function transfer(address to , uint256 amount) external returns (bool);
-//     // def transfer(to: address, amount: uint256) -> bool: nonpayable
-//     function transferFrom( address spender, address to, uint256 amount) external returns (bool);
-// }

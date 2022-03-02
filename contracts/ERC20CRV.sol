@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.4;
 import "../dependencies/open-zeppelin/ERC20.sol";
-import "../dependencies/open-zeppelin/IERC20.sol";
+import "../dependencies/open-zeppelin/IIERC20.sol";
 import "../dependencies/open-zeppelin/IERC20Metadata.sol";
-contract ERC20CRV is IERC20, IERC20Metadata{
+contract ERC20CRV is IIERC20, IERC20Metadata{
     event UpdateMiningParameters(uint256 time , uint256 rate , uint256 supply);
     event SetMinter(address minter);
     event SetAdmin(address admin);
@@ -55,7 +55,6 @@ contract ERC20CRV is IERC20, IERC20Metadata{
     uint256 public rate;
 
     uint256 start_epoch_supply;
-
 
 
     constructor(string memory name_ , string memory symbol_ , uint8  decimals_) {
@@ -275,11 +274,9 @@ contract ERC20CRV is IERC20, IERC20Metadata{
         //     @return bool success
         require(value > 0, "value must be greater than 0");
         require(msg.sender != _to, "cannot transfer to self");
-        // require(allowances[msg.sender][_to] >= value, "insufficient allowance");
         require(balanceOf(msg.sender) >= value, "insufficient balance");
         balances[msg.sender] -= value;
         balances[_to] += value;
-        // allowances[msg.sender][_to] -= value;
         emit Transfer(msg.sender, _to, value);
         return true;
     }

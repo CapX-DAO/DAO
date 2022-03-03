@@ -239,7 +239,7 @@ Functionality
 - Method is used to set governanceStrategy.
 
 
-### \_setVotingDelay() ###
+**\_setVotingDelay()**
 
 ```solidity 
 function \_setVotingDelay(uint256 votingDelay)

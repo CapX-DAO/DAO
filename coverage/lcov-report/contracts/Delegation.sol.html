@@ -1,0 +1,1703 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for contracts/Delegation.sol</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../prettify.css" />
+    <link rel="stylesheet" href="../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../index.html">all files</a> / <a href="index.html">contracts/</a> Delegation.sol
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">6.19% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>7/113</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">0% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>0/62</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">3.85% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>1/26</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">6.03% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>7/116</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line low'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198
+199
+200
+201
+202
+203
+204
+205
+206
+207
+208
+209
+210
+211
+212
+213
+214
+215
+216
+217
+218
+219
+220
+221
+222
+223
+224
+225
+226
+227
+228
+229
+230
+231
+232
+233
+234
+235
+236
+237
+238
+239
+240
+241
+242
+243
+244
+245
+246
+247
+248
+249
+250
+251
+252
+253
+254
+255
+256
+257
+258
+259
+260
+261
+262
+263
+264
+265
+266
+267
+268
+269
+270
+271
+272
+273
+274
+275
+276
+277
+278
+279
+280
+281
+282
+283
+284
+285
+286
+287
+288
+289
+290
+291
+292
+293
+294
+295
+296
+297
+298
+299
+300
+301
+302
+303
+304
+305
+306
+307
+308
+309
+310
+311
+312
+313
+314
+315
+316
+317
+318
+319
+320
+321
+322
+323
+324
+325
+326
+327
+328
+329
+330
+331
+332
+333
+334
+335
+336
+337
+338
+339
+340
+341
+342
+343
+344
+345
+346
+347
+348
+349
+350
+351
+352
+353
+354
+355
+356
+357
+358
+359
+360
+361
+362
+363
+364
+365
+366
+367
+368
+369
+370
+371
+372
+373
+374
+375
+376
+377
+378
+379
+380
+381
+382
+383
+384
+385
+386
+387
+388
+389
+390
+391
+392
+393
+394
+395
+396
+397
+398
+399
+400
+401
+402
+403
+404
+405
+406
+407
+408
+409
+410
+411
+412
+413
+414
+415
+416
+417
+418
+419
+420
+421
+422
+423
+424
+425
+426
+427
+428
+429
+430
+431
+432
+433
+434
+435
+436
+437
+438
+439
+440
+441
+442
+443
+444
+445
+446
+447
+448
+449
+450
+451
+452
+453
+454
+455
+456
+457
+458
+459
+460
+461
+462
+463
+464
+465
+466
+467
+468
+469
+470
+471
+472
+473
+474
+475
+476
+477
+478
+479
+480
+481
+482
+483
+484
+485
+486
+487
+488
+489
+490
+491
+492
+493
+494
+495
+496
+497
+498
+499
+500
+501
+502
+503
+504
+505
+506
+507
+508
+509
+510
+511
+512
+513
+514
+515
+516
+517
+518
+519
+520
+521
+522
+523
+524
+525
+526
+527
+528
+529
+530
+531
+532
+533
+534
+535
+536
+537
+538
+539
+540
+541
+542
+543
+544
+545
+546
+547</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">&nbsp;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
+import {VotingEscrowDelegation} from "./VotingEscrowDelegation.sol";
+import "../dependencies/open-zeppelin/ERC20.sol";
+// import {Utils} from "../dependencies/open-zeppelin/Utils.sol";
+&nbsp;
+interface ERC721Receiver {
+    function onERC721Received(
+        address _operator,
+        address _from,
+        uint256 _token_id,
+        bytes memory _data
+    ) external returns (bytes32);    
+}
+&nbsp;
+&nbsp;
+&nbsp;
+interface VeDelegation {
+    function adjusted_balance_of(address _account) external view returns (uint256);
+    function cancel_boost(uint256 _token_id,address _caller) external;
+    function update_enumeration_data(address _from,address _to,uint256 _token_id,uint256 balance_of_from,uint256 balance_of_to) external;
+    function _burn_boost(uint256 _token_id,address _delegator,address _receiver) external;
+    function create_boost(address _delegator,address _receiver,int256 _percentage,uint256 _cancel_time,uint256 _expire_time, uint256 _id) external;
+    function extend_boost(uint256 _token_id , int256 _percentage , uint256 _expiry_time ,uint256 _cancel_time,address receiver) external ;
+    function _set_delegation_status(address _receiver,address _delegator,bool _status) external;
+    function get_boost_token_data(uint256 _token_id) external view returns (uint256);
+    function transfer_boost_permission(address _to , address delegator) external view;
+    function _transfer_boost(address _from,address _to,int256 _bias,int256 _slope) external;
+}
+&nbsp;
+interface Utilsde {
+    struct slice {
+        uint _len;
+        uint _ptr;
+    }
+    
+    function uinttoint(uint num) external pure returns (int) ;
+function inttouint(int num) external pure returns (uint) ;
+function timechecker(uint256 _expiry_time,uint256 _cancel_time,address delegator,address VOTING_ESCROW) external view returns (uint256) ;
+function memcpy(uint dest, uint src, uint len) external pure ;
+function toSlice(string memory a) external pure returns (slice memory) ;
+function concat(string memory a, string memory b) external pure returns (string memory) ;
+function shift(uint256 _x, int256 _n) external pure returns (uint256) ;
+function shift(int256 _x, int256 _n) external pure returns (int256) ;
+function _uint_to_string(uint256 _x) external pure returns (string memory) ;
+function _deconstruct_bias_slope(uint256 _data) external pure returns (VotingEscrowDelegation.Point memory) ;
+function _calc_bias_slope(int256 _x,int256 _y,int256 _expire_time) external pure returns (VotingEscrowDelegation.Point memory) ;
+function max(uint256 a, uint256 b) external pure returns (uint256) ;
+function max(int256 a, int256 b) external pure returns (int256) ;
+function abs(int256 a) external pure returns (int256) ;
+function get_token_id(address _delegator , uint256 _id) external pure returns (uint256) ;
+function is_contract(address _addr) external view returns (bool isContract);
+function received_boost(uint256 boost_recieved) external view returns (uint256) ;
+function _is_approved_or_owner(address _spender,address owner_of_token_id, address get_approved_token_id , bool isapprovedforall_owner_spender) external pure ;
+function adjusted_balance_of(address _account,VotingEscrowDelegation.Boost memory boost_account,address VOTING_ESCROW) external view returns (uint256);
+function ycalc(address _delegator,VotingEscrowDelegation.Point memory point, int256 _percentage,address VOTING_ESCROW) external view returns (int256) ;
+function delegated_boost(address _account,VotingEscrowDelegation.Boost memory boost_account) external view returns (uint256) ;
+function calc_boost_bias_slope(
+    address _delegator,
+    int256 _percentage,
+    int256 _expire_time,
+    uint256 _extend_token_id,
+    uint256 boost_delegator_delegated,
+    uint256 boost_tokens_extend_token_id_data,address VOTING_ESCROW
+) external view returns (VotingEscrowDelegation.Point memory);
+function token_boost(uint256 _token_id,address VOTING_ESCROW_DELEGATION) external view returns (int256) ;
+function token_expiry(uint256 _token_id,address VOTING_ESCROW_DELEGATION) external view returns (uint256) ;
+function token_cancel_time(uint256 _token_id,address VOTING_ESCROW_DELEGATION) external view returns (uint256) ;
+&nbsp;
+&nbsp;
+}
+&nbsp;
+// interface ERC20 {
+//     function balanceOf(address _owner) external view returns (uint256);
+//     function transfer(address _to, uint256 _value) external returns (bool);
+//     function allowance(address _owner, address _spender) external view returns (uint256);
+//     function transferFrom(address _from, address _to, uint256 _value) external returns (bool);
+// }
+&nbsp;
+contract Delegation{
+  event CommitAdmins(address ownership_admin, address emergency_admin);
+  
+  event ApplyAdmins(address ownership_admin, address emergency_admin);
+&nbsp;
+  
+  event DelegationSet(address delegation);
+  event Approval(
+    address _owner,
+    address _approved,
+    uint256 _token_id
+);
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+// event ApprovalForAll:
+//     _owner: indexed(address)
+//     _operator: indexed(address)
+//     _approved: bool
+&nbsp;
+event ApprovalForAll(
+    address _owner,
+    address _operator,
+    bool _approved
+);
+&nbsp;
+// event Transfer:
+//     _from: indexed(address)
+//     _to: indexed(address)
+//     _token_id: indexed(uint256)
+&nbsp;
+event Transfer(
+    address _from,
+    address _to,
+    uint256 _token_id
+);
+&nbsp;
+// event BurnBoost:
+//     _delegator: indexed(address)
+//     _receiver: indexed(address)
+//     _token_id: indexed(uint256)
+&nbsp;
+event BurnBoost(
+    address _delegator,
+    address _receiver,
+    uint256 _token_id
+);
+&nbsp;
+// event DelegateBoost:
+//     _delegator: indexed(address)
+//     _receiver: indexed(address)
+//     _token_id: indexed(uint256)
+//     _amount: uint256
+//     _cancel_time: uint256
+//     _expire_time: uint256
+&nbsp;
+event DelegateBoost(
+    address _delegator,
+    address _receiver,
+    uint256 _token_id,
+    uint256 _amount,
+    uint256 _cancel_time,
+    uint256 _expire_time
+);
+&nbsp;
+// event ExtendBoost:
+//     _delegator: indexed(address)
+//     _receiver: indexed(address)
+//     _token_id: indexed(uint256)
+//     _amount: uint256
+//     _expire_time: uint256
+//     _cancel_time: uint256
+&nbsp;
+event ExtendBoost(
+    address _delegator,
+    address _receiver,
+    uint256 _token_id,
+    uint256 _amount,
+    uint256 _expire_time,
+    uint256 _cancel_time
+);
+&nbsp;
+// event TransferBoost:
+//     _from: indexed(address)
+//     _to: indexed(address)
+//     _token_id: indexed(uint256)
+//     _amount: uint256
+//     _expire_time: uint256
+&nbsp;
+event TransferBoost(
+    address _from,
+    address _to,
+    uint256 _token_id,
+    uint256 _amount,
+    uint256 _expire_time
+);
+&nbsp;
+// event GreyListUpdated:
+//     _receiver: indexed(address)
+//     _delegator: indexed(address)
+//     _status: bool
+&nbsp;
+event GreyListUpdated(
+    address _receiver,
+    address _delegator,
+    bool _status
+);
+uint256 constant MAX_PCT = 10_000;
+uint256 constant WEEK = 86400 * 7;
+// address constant VOTING_ESCROW = 0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2;
+// address constant VOTING_ESCROW_DELEGATION = 0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2;
+uint256 constant MAX_UINT256 = 2**256 - 1;
+address constant public ZERO_ADDRESS = address(0);
+  mapping(address =&gt; uint256) public balanceOf;
+  mapping(uint256 =&gt; address) public getApproved;
+  mapping(address =&gt; mapping(address =&gt; bool)) public isApprovedForAll;
+  mapping(uint256 =&gt; address) public ownerOf;
+&nbsp;
+  // mapping(uint256 =&gt; address) public getApproved;
+  // mapping(address =&gt; mapping(address =&gt; bool)) public isApprovedForAll;
+&nbsp;
+&nbsp;
+  // using the address of VotingEscrow's smart contract deployed on ganache for now. Will have to change once contract is actually deployed
+&nbsp;
+// this is the contract of votingescrow contract
+&nbsp;
+// change this according voting escrow deployment
+  address immutable VOTING_ESCROW;
+  address public utils;
+&nbsp;
+&nbsp;
+// can set the address of the votingescrow delegation contract
+  address public delegation;
+&nbsp;
+&nbsp;
+  address public emergency_admin; 
+  address public ownership_admin; 
+  address public future_emergency_admin; 
+  address public future_ownership_admin;
+  string public base_uri;
+&nbsp;
+&nbsp;
+<span class="fstat-no" title="function not covered" >  function getOwnershipAdmin() public view returns (address) {</span>
+<span class="cstat-no" title="statement not covered" >    return ownership_admin;</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  function getEmergencyAdmin() public view returns (address) {</span>
+<span class="cstat-no" title="statement not covered" >    return emergency_admin;</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  function getDelegation() public view returns (address) {</span>
+<span class="cstat-no" title="statement not covered" >    return delegation;</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  function approve(address _approved, uint256 _token_id) public {</span>
+<span class="cstat-no" title="statement not covered" >    address owner = ownerOf[_token_id];</span>
+<span class="cstat-no" title="statement not covered" >    require(msg.sender == owner || isApprovedForAll[owner][msg.sender],"must be owner or operator")</span>;
+<span class="cstat-no" title="statement not covered" >    getApproved[_token_id] = _approved</span>;
+<span class="cstat-no" title="statement not covered" >    emit Approval(owner, _approved, _token_id);</span>
+}
+&nbsp;
+<span class="fstat-no" title="function not covered" >function approve(address _owner , address _approved, uint256 _token_id) public {</span>
+<span class="cstat-no" title="statement not covered" >    getApproved[_token_id] = _approved</span>;
+<span class="cstat-no" title="statement not covered" >    emit Approval(_owner, _approved, _token_id);</span>
+}
+&nbsp;
+&nbsp;
+&nbsp;
+  constructor (address _delegation, address _o_admin,address _e_admin,string memory _base_uri,address _voting_escrow,address _utils) {
+&nbsp;
+    VOTING_ESCROW = _voting_escrow;
+    delegation = _delegation;
+&nbsp;
+    ownership_admin = _o_admin;
+    emergency_admin = _e_admin;
+&nbsp;
+    base_uri = _base_uri;
+    utils = _utils;
+&nbsp;
+    emit DelegationSet(_delegation);
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >function tokenURI(uint256 _token_id) internal view returns (string memory) {</span>
+<span class="cstat-no" title="statement not covered" >    return Utilsde(utils).concat(base_uri,Utilsde(utils)._uint_to_string(_token_id));</span>
+}
+&nbsp;
+<span class="fstat-no" title="function not covered" >function mint(address _to , uint256 _token_id) public {</span>
+<span class="cstat-no" title="statement not covered" >    require(_to != ZERO_ADDRESS,"0")</span>;
+<span class="cstat-no" title="statement not covered" >    require (ownerOf[_token_id] == ZERO_ADDRESS,"1")</span>; // dev: token exists
+&nbsp;
+&nbsp;
+    // minting - This is called before updates to balance and totalSupply
+<span class="cstat-no" title="statement not covered" >    VotingEscrowDelegation(delegation).update_enumeration_data(ZERO_ADDRESS, _to, _token_id,0,balanceOf[_to])</span>;
+<span class="cstat-no" title="statement not covered" >    balanceOf[_to] += 1</span>;
+<span class="cstat-no" title="statement not covered" >    ownerOf[_token_id] = _to</span>;
+<span class="cstat-no" title="statement not covered" >    emit Transfer(ZERO_ADDRESS, _to, _token_id);</span>
+}
+&nbsp;
+&nbsp;
+&nbsp;
+<span class="fstat-no" title="function not covered" >function getbalance(address _owner) public view returns (uint256) {</span>
+<span class="cstat-no" title="statement not covered" >    return balanceOf[_owner];</span>
+}
+&nbsp;
+<span class="fstat-no" title="function not covered" >function burn(uint256 _token_id) public {</span>
+<span class="cstat-no" title="statement not covered" >    address owner = ownerOf[_token_id];</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    approve(owner, ZERO_ADDRESS, _token_id)</span>;
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    balanceOf[owner] -= 1</span>;
+<span class="cstat-no" title="statement not covered" >    ownerOf[_token_id] = ZERO_ADDRESS</span>;
+    
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    VeDelegation(delegation).update_enumeration_data(owner, ZERO_ADDRESS, _token_id,balanceOf[owner],0)</span>;
+<span class="cstat-no" title="statement not covered" >    emit Transfer(msg.sender, ZERO_ADDRESS, _token_id);</span>
+<span class="cstat-no" title="statement not covered" >    Utilsde(utils)._is_approved_or_owner(msg.sender,ownerOf[_token_id],getApproved[_token_id],isApprovedForAll[ownerOf[_token_id]][msg.sender])</span>;
+<span class="cstat-no" title="statement not covered" >    uint256 tdata = VeDelegation(delegation).get_boost_token_data(_token_id);</span>
+<span class="cstat-no" title="statement not covered" >    if (tdata != 0) {</span>
+<span class="cstat-no" title="statement not covered" >        address delegator = address(uint160(Utilsde(utils).shift(_token_id, -96)));</span>
+<span class="cstat-no" title="statement not covered" >        VeDelegation(delegation)._burn_boost(_token_id, delegator, owner)</span>;
+<span class="cstat-no" title="statement not covered" >        emit BurnBoost(delegator, owner, _token_id);</span>
+    }
+<span class="cstat-no" title="statement not covered" >    VeDelegation(delegation).update_enumeration_data(ownerOf[_token_id], ZERO_ADDRESS, _token_id,balanceOf[owner],0)</span>;
+}
+&nbsp;
+<span class="fstat-no" title="function not covered" >function transfer(address _from,address _to,uint256 _token_id) public {</span>
+<span class="cstat-no" title="statement not covered" >    Utilsde(utils)._is_approved_or_owner(msg.sender,ownerOf[_token_id],getApproved[_token_id],isApprovedForAll[ownerOf[_token_id]][msg.sender])</span>;
+<span class="cstat-no" title="statement not covered" >    require(_to != ZERO_ADDRESS)</span>;
+<span class="cstat-no" title="statement not covered" >    require(ownerOf[_token_id] == _from,"_from is not owner")</span>;
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    address delegator = address(uint160(Utilsde(utils).shift(_token_id, -96)));</span>
+<span class="cstat-no" title="statement not covered" >    VeDelegation(delegation).transfer_boost_permission(_to, delegator)</span>;
+&nbsp;
+    // clear previous token approval
+<span class="cstat-no" title="statement not covered" >    approve(_from, ZERO_ADDRESS, _token_id)</span>;
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    balanceOf[_from] -= 1</span>;
+<span class="cstat-no" title="statement not covered" >    VeDelegation(delegation).update_enumeration_data(_from, _to, _token_id,balanceOf[_from],balanceOf[_to])</span>;
+<span class="cstat-no" title="statement not covered" >    balanceOf[_to] += 1</span>;
+<span class="cstat-no" title="statement not covered" >    ownerOf[_token_id] = _to</span>;
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    VotingEscrowDelegation.Point memory tpoint = Utilsde(utils)._deconstruct_bias_slope(VeDelegation(delegation).get_boost_token_data(_token_id));</span>
+<span class="cstat-no" title="statement not covered" >    int256 tvalue = tpoint.slope * Utilsde(utils).uinttoint(block.timestamp) + tpoint.bias;</span>
+&nbsp;
+    // if the boost value is negative, reset the slope and bias
+<span class="cstat-no" title="statement not covered" >    if (tvalue &gt; 0) {</span>
+<span class="cstat-no" title="statement not covered" >        VeDelegation(delegation)._transfer_boost(_from, _to, tpoint.bias, tpoint.slope)</span>;
+        // y = mx + b -&gt; y - b = mx -&gt; (y - b)/m = x -&gt; -b / m = x (x-intercept)
+<span class="cstat-no" title="statement not covered" >        uint256 expiry = Utilsde(utils).inttouint(-tpoint.bias / tpoint.slope);</span>
+<span class="cstat-no" title="statement not covered" >        emit TransferBoost(_from, _to, _token_id, Utilsde(utils).inttouint(tvalue), expiry);</span>
+    } else {
+<span class="cstat-no" title="statement not covered" >        VeDelegation(delegation)._burn_boost(_token_id, delegator, _from)</span>;
+<span class="cstat-no" title="statement not covered" >        emit BurnBoost(delegator, _from, _token_id);</span>
+    }
+    
+<span class="cstat-no" title="statement not covered" >    emit Transfer(_from, _to, _token_id);</span>
+}
+&nbsp;
+<span class="fstat-no" title="function not covered" >function cancel_boost(uint256 _token_id,address _caller) public {</span>
+<span class="cstat-no" title="statement not covered" >  address delegator = address(uint160(Utilsde(utils).shift(_token_id, -96)));</span>
+<span class="cstat-no" title="statement not covered" >  address receiver = ownerOf[_token_id];</span>
+<span class="cstat-no" title="statement not covered" >  VotingEscrowDelegation.Point memory tpoint = Utilsde(utils)._deconstruct_bias_slope(VeDelegation(delegation).get_boost_token_data(_token_id));</span>
+<span class="cstat-no" title="statement not covered" >    require(receiver != ZERO_ADDRESS,"token does not exist")</span>;
+<span class="cstat-no" title="statement not covered" >    int256 tvalue = tpoint.slope * Utilsde(utils).uinttoint(block.timestamp) + tpoint.bias;</span>
+<span class="cstat-no" title="statement not covered" >    require(_caller == receiver || isApprovedForAll[receiver][_caller] || tvalue &lt;= 0)</span>;
+<span class="cstat-no" title="statement not covered" >    VeDelegation(delegation)._burn_boost(_token_id, delegator, receiver)</span>;
+<span class="cstat-no" title="statement not covered" >    emit BurnBoost(delegator, delegator, _token_id);</span>
+}
+&nbsp;
+<span class="fstat-no" title="function not covered" >function safeTransferFrom(address _from , address _to , uint256 _token_id , bytes memory _data) public  {</span>
+&nbsp;
+    //     @notice Transfers the ownership of an NFT from one address to another address
+    //     @dev Throws unless `msg.sender` is the current owner, an authorized
+    //         operator, or the approved address for this NFT. Throws if `_from` is
+    //         not the current owner. Throws if `_to` is the zero address. Throws if
+    //         `_tokenId` is not a valid NFT. When transfer is complete, this function
+    //         checks if `_to` is a smart contract (code size &gt; 0). If so, it calls
+    //         `onERC721Received` on `_to` and throws if the return value is not
+    //         `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`.
+    //     @param _from The current owner of the NFT
+    //     @param _to The new owner
+    //     @param _token_id The NFT to transfer
+    //     @param _data Additional data with no specified format, sent in call to `_to`, max length 4096
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    transfer(_from, _to, _token_id)</span>;
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    if (Utilsde(utils).is_contract(_to)) {</span>
+<span class="cstat-no" title="statement not covered" >        bytes32 response = ERC721Receiver(_to).onERC721Received(</span>
+            msg.sender, _from, _token_id, _data
+        );
+<span class="cstat-no" title="statement not covered" >        bytes4 y = bytes4(0);</span>
+        assembly {
+            mstore(y,response)
+        }
+<span class="cstat-no" title="statement not covered" >        require(y == keccak256("onERC721Received(address,address,uint256,bytes)"),"invalid response")</span>;
+    }
+}
+&nbsp;
+<span class="fstat-no" title="function not covered" >function setApproveForAll(address _operator,bool _approved) public {</span>
+    //     @notice Enable or disable approval for a third party ("operator") to manage
+    //         all of `msg.sender`'s assets.
+    //     @dev Emits the ApprovalForAll event. Multiple operators per account are allowed.
+    //     @param _operator Address to add to the set of authorized operators.
+    //     @param _approved True if the operator is approved, false to revoke approval.
+<span class="cstat-no" title="statement not covered" >    isApprovedForAll[msg.sender][_operator] = _approved</span>;
+<span class="cstat-no" title="statement not covered" >    emit ApprovalForAll(msg.sender, _operator, _approved);</span>
+}
+&nbsp;
+&nbsp;
+&nbsp;
+<span class="fstat-no" title="function not covered" >function getowner(uint256 _token_id) public view returns(address){</span>
+<span class="cstat-no" title="statement not covered" >    return ownerOf[_token_id];</span>
+}
+&nbsp;
+&nbsp;
+<span class="fstat-no" title="function not covered" >  function adjusted_balance_of(address _account) public view returns (uint256) {</span>
+<span class="cstat-no" title="statement not covered" >    if (delegation == ZERO_ADDRESS) {</span>
+<span class="cstat-no" title="statement not covered" >      return ERC20(VOTING_ESCROW).balanceOf(_account);</span>
+    }
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    return VotingEscrowDelegation(delegation).adjusted_balance_of(_account);</span>
+  }
+&nbsp;
+&nbsp;
+&nbsp;
+<span class="fstat-no" title="function not covered" >  function kill_delegation() public {</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    require(msg.sender == ownership_admin || msg.sender == emergency_admin)</span>;
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    delegation = ZERO_ADDRESS</span>;
+<span class="cstat-no" title="statement not covered" >    emit DelegationSet(ZERO_ADDRESS);</span>
+  }
+&nbsp;
+&nbsp;
+<span class="fstat-no" title="function not covered" >  function __set_delegation(address _delegation) public {</span>
+<span class="cstat-no" title="statement not covered" >    require(msg.sender == ownership_admin)</span>;
+&nbsp;
+    // call `adjusted_balance_of` to make sure it works
+<span class="cstat-no" title="statement not covered" >    VeDelegation(_delegation).adjusted_balance_of(msg.sender)</span>;
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    delegation = _delegation</span>;
+<span class="cstat-no" title="statement not covered" >    emit DelegationSet(_delegation);</span>
+  }
+&nbsp;
+&nbsp;
+&nbsp;
+<span class="fstat-no" title="function not covered" >  function commit_set_admins(address  _o_admin,address  _e_admin) public {</span>
+<span class="cstat-no" title="statement not covered" >    require(msg.sender == ownership_admin)</span>;
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    future_ownership_admin = _o_admin</span>;
+<span class="cstat-no" title="statement not covered" >    future_emergency_admin = _e_admin</span>;
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    emit CommitAdmins(_o_admin, _e_admin);</span>
+  }
+&nbsp;
+&nbsp;
+<span class="fstat-no" title="function not covered" >  function apply_set_admins() public {</span>
+<span class="cstat-no" title="statement not covered" >    address _o_admin = future_ownership_admin;</span>
+<span class="cstat-no" title="statement not covered" >    address _e_admin = future_emergency_admin;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    require(msg.sender == ownership_admin)</span>;
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    ownership_admin = _o_admin</span>;
+<span class="cstat-no" title="statement not covered" >    emergency_admin = _e_admin</span>;
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    emit ApplyAdmins(_o_admin, _e_admin);</span>
+  }
+&nbsp;
+<span class="fstat-no" title="function not covered" >  function cancel_boost(uint256 _token_id) public {</span>
+    //     @notice Cancel an outstanding boost
+    //     @dev This does not burn the token, only the boost it represents. The owner
+    //         of the token or their operator can cancel a boost at any time. The
+    //         delegator or their operator can only cancel a token after the cancel
+    //         time. Anyone can cancel the boost if the value of it is negative.
+    //     @param _token_id The token to cancel
+<span class="cstat-no" title="statement not covered" >    VeDelegation(delegation).cancel_boost(_token_id, msg.sender)</span>;
+}
+&nbsp;
+<span class="fstat-no" title="function not covered" >function batch_cancel_boosts(uint256[] memory _token_ids) public {</span>
+    //     @notice Cancel many outstanding boosts
+    //     @dev This does not burn the token, only the boost it represents. The owner
+    //         of the token or their operator can cancel a boost at any time. The
+    //         delegator or their operator can only cancel a token after the cancel
+    //         time. Anyone can cancel the boost if the value of it is negative.
+    //     @param _token_ids A list of 256 token ids to nullify. The list must
+    //         be padded with 0 values if less than 256 token ids are provided.
+<span class="cstat-no" title="statement not covered" >    for (uint256 index = 0; index &lt; _token_ids.length; index++) {</span>
+<span class="cstat-no" title="statement not covered" >        uint256 _token_id = _token_ids[index];</span>
+<span class="cstat-no" title="statement not covered" >        if (_token_id == 0) {</span>
+            break;
+        }
+<span class="cstat-no" title="statement not covered" >        cancel_boost(_token_id, msg.sender)</span>;
+    }
+}
+&nbsp;
+<span class="fstat-no" title="function not covered" >function create_boost(</span>
+    address _delegator,
+    address _receiver,
+    int256 _percentage,
+    uint256 _cancel_time,
+    uint256 _expire_time,
+    uint256 _id
+) public {
+<span class="cstat-no" title="statement not covered" >  require(_delegator != address(0),"0")</span>;
+<span class="cstat-no" title="statement not covered" >  require(msg.sender == _delegator || isApprovedForAll[_delegator][msg.sender],"d or o")</span>;  // dev: only delegator or operator
+<span class="cstat-no" title="statement not covered" >  uint256 token_id = Utilsde(utils).shift((uint160(_delegator)), 96) + _id;</span>
+<span class="cstat-no" title="statement not covered" >  mint(_receiver, token_id)</span>;
+<span class="cstat-no" title="statement not covered" >  VotingEscrowDelegation(delegation).create_boost(_delegator, _receiver, _percentage, _cancel_time, _expire_time, _id)</span>;
+  
+    // check if the token exists here before we expend more gas by minting it
+  // VeDelegation(delegation).update_enumeration_data(ZERO_ADDRESS,_receiver, token_id,0,balanceOf[_receiver]);
+  
+}
+&nbsp;
+// function debugger(address _id) public view {
+//      VotingEscrowDelegation(delegation).debugger(_id);
+// }
+&nbsp;
+<span class="fstat-no" title="function not covered" >function extend_boost(uint256 _token_id , int256 _percentage , uint256 _expiry_time ,uint256 _cancel_time) public {</span>
+<span class="cstat-no" title="statement not covered" >  address delegator = address(uint160(Utilsde(utils).shift(_token_id, -96)));</span>
+<span class="cstat-no" title="statement not covered" >  address receiver = ownerOf[_token_id];</span>
+    
+<span class="cstat-no" title="statement not covered" >    require(msg.sender == delegator || isApprovedForAll[delegator][msg.sender])</span>; // dev: only delegator or operator
+    
+<span class="cstat-no" title="statement not covered" >    VeDelegation(delegation).extend_boost(_token_id, _percentage, _expiry_time, _cancel_time,receiver)</span>;
+<span class="cstat-no" title="statement not covered" >    VeDelegation(delegation)._burn_boost(_token_id, delegator, receiver)</span>;
+    
+}
+&nbsp;
+&nbsp;
+<span class="fstat-no" title="function not covered" >function set_delegation_status(address _reciever , address _delegator , bool _status) public {</span>
+    //     @notice Set or reaffirm the blacklist/whitelist status of a delegator for a receiver.
+    //     @dev Setting delegator as the Utilsde(utils).ZERO_ADDRESS enables users to deactive delegations globally
+    //         and enable the white list. The ability of a delegator to delegate to a receiver
+    //         is determined by ~(grey_list[_receiver][Utilsde(utils).ZERO_ADDRESS] ^ grey_list[_receiver][_delegator]).
+    //     @param _receiver The account which we will be updating it's list
+    //     @param _delegator The account to disallow/allow delegations from
+    //     @param _status Boolean of the status to set the _delegator account to
+<span class="cstat-no" title="statement not covered" >    require(msg.sender == _reciever || isApprovedForAll[_reciever][ msg.sender], "only the owner or approved can set the status")</span>;
+<span class="cstat-no" title="statement not covered" >    VeDelegation(delegation)._set_delegation_status(_reciever, _delegator, _status)</span>;
+}
+&nbsp;
+<span class="fstat-no" title="function not covered" >function batch_set_delegation_status(address _reciever,address[] memory _delegators , uint256[] memory _status) public {</span>
+    //     @notice Set or reaffirm the blacklist/whitelist status of multiple delegators for a receiver.
+    //     @dev Setting delegator as the Utilsde(utils).ZERO_ADDRESS enables users to deactive delegations globally
+    //         and enable the white list. The ability of a delegator to delegate to a receiver
+    //         is determined by ~(grey_list[_receiver][Utilsde(utils).ZERO_ADDRESS] ^ grey_list[_receiver][_delegator]).
+    //     @param _receiver The account which we will be updating it's list
+    //     @param _delegators List of 256 accounts to disallow/allow delegations from
+    //     @param _status List of 256 0s and 1s (booleans) of the status to set the _delegator_i account to.
+    //         if the value is not 0 or 1, execution will break, effectively stopping at the index.
+<span class="cstat-no" title="statement not covered" >    require(msg.sender == _reciever || isApprovedForAll[_reciever][msg.sender], "only the owner or approved can set the status")</span>;
+&nbsp;
+<span class="cstat-no" title="statement not covered" >    for (uint256 i = 0; i &lt; _delegators.length; i++) {</span>
+<span class="cstat-no" title="statement not covered" >        if (_status[i] &gt; 1) {</span>
+            break;
+        }
+<span class="cstat-no" title="statement not covered" >        VeDelegation(delegation)._set_delegation_status(_reciever, _delegators[i], (_status[i] != 0))</span>;
+    }
+}
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+}
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Tue Feb 22 2022 19:05:46 GMT+0530 (India Standard Time)
+</div>
+</div>
+<script src="../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../sorter.js"></script>
+</body>
+</html>

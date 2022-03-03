@@ -214,7 +214,7 @@ Functionality
 **\_\_abdicate()**
 
 ```solidity 
-function \_\_abdicate()
+function __abdicate()
 ```
 
 Functionality
@@ -227,7 +227,7 @@ Functionality
 **\_setGovernanceStrategy**
 
 ```solidity 
-function \_setGovernanceStrategy(address governanceStrategy)
+function _setGovernanceStrategy(address governanceStrategy)
 ```
 
 Inputs required
@@ -242,7 +242,7 @@ Functionality
 **\_setVotingDelay()**
 
 ```solidity 
-function \_setVotingDelay(uint256 votingDelay)
+function _setVotingDelay(uint256 votingDelay)
 ```
 
 Inputs required
@@ -257,7 +257,7 @@ Functionality
 **\_authorizeExecutor()**
 
 ```solidity 
-function \_authorizeExecutor(address executor)
+function _authorizeExecutor(address executor)
 ```
 
 Inputs required 
@@ -273,7 +273,7 @@ Functionality
 **\_unauthorizeExecutor()**
 
 ```solidity 
-function \_unauthorizeExecutor(address executor)
+function _unauthorizeExecutor(address executor)
 ```
 
 Inputs required 

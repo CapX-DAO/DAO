@@ -12,7 +12,7 @@ Dummy contract to test execution of proposal
 **Setval :**
 
 ```solidity 
-function Setval(uint256 v) public
+function setVal(uint256 v) public
 ```
 
 Inputs required
@@ -28,7 +28,7 @@ Functionality
 **getVal :**
 
 ```solidity 
-function getval public view returns (uint256)
+function getVal public view returns (uint256)
 ```
 Functionality
 

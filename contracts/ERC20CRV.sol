@@ -3,27 +3,26 @@ pragma solidity ^0.8.4;
 import "../dependencies/open-zeppelin/ERC20.sol";
 import "../dependencies/open-zeppelin/IERC20.sol";
 import "../dependencies/open-zeppelin/IERC20Metadata.sol";
-contract ERC20CRV is IERC20, IERC20Metadata{
+contract ERC20CRV is IIERC20, IERC20Metadata{
     event UpdateMiningParameters(uint256 time , uint256 rate , uint256 supply);
     event SetMinter(address minter);
     event SetAdmin(address admin);
 
-    string public _name;
-    string public _symbol;
-    uint8 public _decimals;
+    string _name;
+    string _symbol;
+    uint8 _decimals;
 
     struct mintinfo {
-        uint256 blocknumber;
+        uint256 blockNumber;
         int256 value;
         
     }
 
     mapping(address => uint256) balances;
     mapping(address => mapping(address => uint256)) allowances;
-    uint256 public total_supply;
-    mapping(uint256 => mintinfo) mintedatblocknumber;
-    uint256 mintedatblocknumberlength;
-    // int mintedatblocknumberlength;
+    uint256 supply;
+    mapping(uint256 => mintinfo) mintedAtBlockNumber;
+    uint256 mintedAtBlockNumberLength;
 
     address public minter;
     address public admin;
@@ -50,36 +49,33 @@ contract ERC20CRV is IERC20, IERC20Metadata{
     address constant ZERO_ADDRESS = address(0);
 
     // Supply variables
-    int128 public mining_epoch;
-    uint256 public start_epoch_time;
+    int128 public miningEpoch;
+    uint256 public startEpochTime;
     uint256 public rate;
 
-    uint256 start_epoch_supply;
-
+    uint256 startEpochSupply;
 
 
     constructor(string memory name_ , string memory symbol_ , uint8  decimals_) {
-        ///
         /// @notice Contract constructor
         /// @param _name Token full name
         /// @param _symbol Token symbol
         /// @param _decimals Number of decimals for token
-        ///
 
 
-        uint256 init_supply = INITIAL_SUPPLY * 10 ** _decimals;
+        uint256 initSupply = INITIAL_SUPPLY * 10 ** _decimals;
         _name = name_;
         _symbol = symbol_;
         _decimals = decimals_;
-        balances[msg.sender] = init_supply;
-        total_supply = init_supply;
+        balances[msg.sender] = initSupply;
+        supply = initSupply;
         admin = msg.sender;
-        emit Transfer(ZERO_ADDRESS, msg.sender, init_supply);
+        emit Transfer(ZERO_ADDRESS, msg.sender, initSupply);
 
-        start_epoch_time = block.timestamp + INFLATION_DELAY - RATE_REDUCTION_TIME;
-        mining_epoch = -1;
+        startEpochTime = block.timestamp + INFLATION_DELAY - RATE_REDUCTION_TIME;
+        miningEpoch = -1;
         rate = 0;
-        start_epoch_supply = init_supply;
+        startEpochSupply = initSupply;
         
     }
 
@@ -97,139 +93,139 @@ contract ERC20CRV is IERC20, IERC20Metadata{
     }
 
     function totalSupply() public view virtual override returns (uint256) {
-        return total_supply;
+        return supply;
     }
 
     function balanceOf(address _owner) public view virtual override returns (uint256) {
         return balances[_owner];
     }
 
-    function _update_mining_parameters() private {
+    function _updateMiningParameters() private {
         /// @dev Update mining rate and supply at the start of the epoch
-        //       Any modifying mining call must also call this
+        /// Any modifying mining call must also call this
 
         uint256 _rate = rate;
-        uint256 _start_epoch_supply = start_epoch_supply;
+        uint256 _startEpochSupply = startEpochSupply;
 
-        start_epoch_time += RATE_REDUCTION_TIME;
-        mining_epoch += 1;
+        startEpochTime += RATE_REDUCTION_TIME;
+        miningEpoch += 1;
 
         if (_rate == 0) {
             _rate = INITIAL_RATE;
         } else {
-            _start_epoch_supply += _rate * RATE_REDUCTION_TIME;
-            start_epoch_supply = _start_epoch_supply;
+            _startEpochSupply += _rate * RATE_REDUCTION_TIME;
+            startEpochSupply = _startEpochSupply;
             _rate = _rate * RATE_DENOMINATOR / RATE_REDUCTION_COEFFICIENT;
         }
 
         rate = _rate;
 
-        emit UpdateMiningParameters(block.timestamp, _rate, _start_epoch_supply);
+        emit UpdateMiningParameters(block.timestamp, _rate, _startEpochSupply);
     }
 
-    function totalSupplyAt(uint256 blocknumber) public view virtual returns (uint256) {
-        int256 numtosubtract = 0;
-        for (uint256 index = 0; index < mintedatblocknumberlength; index++) {
-            if (mintedatblocknumber[mintedatblocknumberlength - index - 1].blocknumber >= blocknumber) {
-                numtosubtract += mintedatblocknumber[mintedatblocknumberlength - index - 1].value;
+    function totalSupplyAt(uint256 blockNumber) public view virtual returns (uint256) {
+        int256 numToSubtract = 0;
+        for (uint256 index = 0; index < mintedAtBlockNumberLength; index++) {
+            if (mintedAtBlockNumber[mintedAtBlockNumberLength - index - 1].blockNumber >= blockNumber) {
+                numToSubtract += mintedAtBlockNumber[mintedAtBlockNumberLength - index - 1].value;
             } else {
                 break;
             }
         }
-        return inttouint(uinttoint(total_supply) - numtosubtract);
+        return intToUint(uintToInt(supply) - numToSubtract);
     }
 
-    function update_mining_parameters() public {
+    function updateMiningParameters() public {
         /// @notice Update mining rate and supply at the start of the epoch
         /// @dev Callable by any address, but only once per epoch
-        //         Total supply becomes slightly larger if this function is called late
-        require(block.timestamp >= start_epoch_time + RATE_REDUCTION_TIME, "too soon!");
-        _update_mining_parameters();
+        /// Total supply becomes slightly larger if this function is called late
+        require(block.timestamp >= startEpochTime + RATE_REDUCTION_TIME, "too soon!");
+        _updateMiningParameters();
     }
 
-    function start_epoch_time_write() public returns (uint256) {
+    function startEpochTimeWrite() public returns (uint256) {
         /// @notice Get timestamp of the current mining epoch start
-        //             while simultaneously updating mining parameters
+        /// while simultaneously updating mining parameters
         /// @return Timestamp of the epoch
-        if (block.timestamp >= start_epoch_time + RATE_REDUCTION_TIME) {
-            _update_mining_parameters();
-            return start_epoch_time;
+        if (block.timestamp >= startEpochTime + RATE_REDUCTION_TIME) {
+            _updateMiningParameters();
+            return startEpochTime;
         } else {
-            return start_epoch_time;
+            return startEpochTime;
         }
     }
 
-    function future_epoch_time_write() public returns (uint256) {
+    function futureEpochTimeWrite() public returns (uint256) {
         /// @notice Get timestamp of the next mining epoch start
-        //             while simultaneously updating mining parameters
+        /// while simultaneously updating mining parameters
         /// @return Timestamp of the next epoch
-        if (block.timestamp >= start_epoch_time + RATE_REDUCTION_TIME) {
-            _update_mining_parameters();
-            return start_epoch_time + RATE_REDUCTION_TIME;
+        if (block.timestamp >= startEpochTime + RATE_REDUCTION_TIME) {
+            _updateMiningParameters();
+            return startEpochTime + RATE_REDUCTION_TIME;
         } else {
-            return start_epoch_time + RATE_REDUCTION_TIME;
+            return startEpochTime + RATE_REDUCTION_TIME;
         }
     }
 
-    function _available_supply() private view returns (uint256){
-        return start_epoch_supply + (block.timestamp - start_epoch_time) * rate;
+    function _availableSupply() private view returns (uint256){
+        return startEpochSupply + (block.timestamp - startEpochTime) * rate;
     }
 
-    function available_supply() public view returns (uint256) {
+    function availableSupply() public view returns (uint256) {
         /// @notice Current number of tokens in existence (claimed or unclaimed)
         /// @dev Callable by any address
-        return _available_supply();
+        return _availableSupply();
     }
 
 
-    function mintable_in_timeframe(uint256 start,uint256 end) public view returns (uint256) {
+    function mintableInTimeframe(uint256 start,uint256 end) public view returns (uint256) {
         /// @notice How much supply is mintable from start timestamp till end timestamp
         /// @param start Start of the time interval (timestamp)
         /// @param end End of the time interval (timestamp)
         /// @return Tokens mintable from `start` till `end`
         require(start <= end, "start must be less than end");
-        uint256 to_mint = 0;
-        uint256 current_epoch_time = start_epoch_time;
-        uint256 current_rate = rate;
+        uint256 toMint = 0;
+        uint256 currentEpochTime = startEpochTime;
+        uint256 currentRate = rate;
 
         // Special case if end is in future (not yet minted) epoch
-        if (end > current_epoch_time + RATE_REDUCTION_TIME) {
-            current_epoch_time += RATE_REDUCTION_TIME;
-            current_rate = current_rate * RATE_DENOMINATOR / RATE_REDUCTION_COEFFICIENT;
+        if (end > currentEpochTime + RATE_REDUCTION_TIME) {
+            currentEpochTime += RATE_REDUCTION_TIME;
+            currentRate = currentRate * RATE_DENOMINATOR / RATE_REDUCTION_COEFFICIENT;
         }
 
-        require(end <= current_epoch_time + RATE_REDUCTION_TIME, "end must be less than or equal to current_epoch_time + RATE_REDUCTION_TIME");
+        require(end <= currentEpochTime + RATE_REDUCTION_TIME, "end must be less than or equal to currentEpochTime + RATE_REDUCTION_TIME");
 
         for (uint256 i = 0; i < 999; i++) {  // Curve will not work in 1000 years. Darn!
-            if (end >= current_epoch_time) {
-                uint256 current_end = end;
-                if (current_end > current_epoch_time + RATE_REDUCTION_TIME) {
-                    current_end = current_epoch_time + RATE_REDUCTION_TIME;
+            if (end >= currentEpochTime) {
+                uint256 currentEnd = end;
+                if (currentEnd > currentEpochTime + RATE_REDUCTION_TIME) {
+                    currentEnd = currentEpochTime + RATE_REDUCTION_TIME;
                 }
 
-                uint256 current_start = start;
-                if (current_start >= current_epoch_time + RATE_REDUCTION_TIME) {
+                uint256 currentStart = start;
+                if (currentStart >= currentEpochTime + RATE_REDUCTION_TIME) {
                     break;  // We should never get here but what if...
-                } else if (current_start < current_epoch_time) {
-                    current_start = current_epoch_time;
+                } else if (currentStart < currentEpochTime) {
+                    currentStart = currentEpochTime;
                 }
 
-                to_mint += current_rate * (current_end - current_start);
+                toMint += currentRate * (currentEnd - currentStart);
 
-                if (start >= current_epoch_time) {
+                if (start >= currentEpochTime) {
                     break;
                 }
 
             }
-            current_epoch_time -= RATE_REDUCTION_TIME;
-            current_rate = current_rate * RATE_REDUCTION_COEFFICIENT / RATE_DENOMINATOR;  // double-division with rounding made rate a bit less => good
-            require(current_rate <= INITIAL_RATE, "current_rate must be less than or equal to INITIAL_RATE");
+            currentEpochTime -= RATE_REDUCTION_TIME;
+            currentRate = currentRate * RATE_REDUCTION_COEFFICIENT / RATE_DENOMINATOR;  // double-division with rounding made rate a bit less => good
+            require(currentRate <= INITIAL_RATE, "currentRate must be less than or equal to INITIAL_RATE");
         }
 
-        return to_mint;
+        return toMint;
     }
 
-    function set_minter(address _minter) public {
+    function setMinter(address _minter) public {
         /// @notice Set the minter address
         /// @dev Only callable once, when minter has not yet been set
         /// @param _minter Address of the minter
@@ -239,7 +235,7 @@ contract ERC20CRV is IERC20, IERC20Metadata{
         emit SetMinter(_minter);
     }
 
-    function set_admin(address _admin) public {
+    function setAdmin(address _admin) public {
         /// @notice Set the new admin.
         /// @dev After all is set up, admin only can change the token name
         /// @param _admin New admin address
@@ -259,17 +255,15 @@ contract ERC20CRV is IERC20, IERC20Metadata{
     function transfer(address _to , uint256 value) public override returns (bool) {
         /// @notice Transfer `_value` tokens from `msg.sender` to `_to`
         /// @dev Vyper does not allow underflows, so the subtraction in
-        //          this function will revert on an insufficient balance
+        /// this function will revert on an insufficient balance
         /// @param _to The address to transfer to
         /// @param _value The amount to be transferred
         /// @return bool success
         require(value > 0, "value must be greater than 0");
         require(msg.sender != _to, "cannot transfer to self");
-        // require(allowances[msg.sender][_to] >= value, "insufficient allowance");
         require(balanceOf(msg.sender) >= value, "insufficient balance");
         balances[msg.sender] -= value;
         balances[_to] += value;
-        // allowances[msg.sender][_to] -= value;
         emit Transfer(msg.sender, _to, value);
         return true;
     }
@@ -294,8 +288,8 @@ contract ERC20CRV is IERC20, IERC20Metadata{
     function approve(address _spender,uint256 _value) public override returns (bool) {
         /// @notice Approve `_spender` to transfer `_value` tokens on behalf of `msg.sender`
         /// @dev Approval may only be from zero -> nonzero or from nonzero -> zero in order
-        //         to mitigate the potential
-        //         https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
+        /// to mitigate the potential
+        /// https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
         /// @param _spender The address which will spend the funds
         /// @param _value The amount of tokens to be spent
         /// @return bool success
@@ -305,11 +299,11 @@ contract ERC20CRV is IERC20, IERC20Metadata{
         return true;        
     }
 
-    function uinttoint(uint num) private pure returns (int) {
+    function uintToInt(uint num) private pure returns (int) {
     return int(num);
   }
 
-  function inttouint(int num) private pure returns (uint) {
+  function intToUint(int num) private pure returns (uint) {
     return uint(num);
   }
 
@@ -323,11 +317,11 @@ contract ERC20CRV is IERC20, IERC20Metadata{
         require(_to != ZERO_ADDRESS, "cannot mint to 0x0");
         require(_value > 0, "value must be greater than 0");
         require(msg.sender == admin, "Only Admin can mint");
-        total_supply += _value;
+        supply += _value;
         balances[_to] += _value;
         emit Transfer(ZERO_ADDRESS, _to, _value);
-        mintedatblocknumber[mintedatblocknumberlength] = mintinfo(block.number,uinttoint(_value));
-        mintedatblocknumberlength++;
+        mintedAtBlockNumber[mintedAtBlockNumberLength] = mintinfo(block.number,uintToInt(_value));
+        mintedAtBlockNumberLength++;
         return true;
     }
 
@@ -340,14 +334,14 @@ contract ERC20CRV is IERC20, IERC20Metadata{
         require(_value > 0, "value must be greater than 0");
         require(balances[msg.sender] >= _value, "insufficient balance");
         balances[msg.sender] -= _value;
-        total_supply -= _value;
+        supply -= _value;
         emit Transfer(msg.sender, ZERO_ADDRESS, _value);
-        mintedatblocknumber[mintedatblocknumberlength] = mintinfo(block.number,(uinttoint(_value)*-1));
-        mintedatblocknumberlength++;
+        mintedAtBlockNumber[mintedAtBlockNumberLength] = mintinfo(block.number,(uintToInt(_value)*-1));
+        mintedAtBlockNumberLength++;
         return true;
     }
 
-    function set_name(string memory name_, string memory symbol_) public {
+    function setName(string memory name_, string memory symbol_) public {
         /// @notice Change the token name and symbol to `_name` and `_symbol`
         /// @dev Only callable by the admin account
         /// @param _name New token name

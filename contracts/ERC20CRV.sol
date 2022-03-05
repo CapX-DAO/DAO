@@ -3,7 +3,7 @@ pragma solidity ^0.8.4;
 import "../dependencies/open-zeppelin/ERC20.sol";
 import "../dependencies/open-zeppelin/IERC20.sol";
 import "../dependencies/open-zeppelin/IERC20Metadata.sol";
-contract ERC20CRV is IIERC20, IERC20Metadata{
+contract ERC20CRV is IERC20, IERC20Metadata{
     event UpdateMiningParameters(uint256 time , uint256 rate , uint256 supply);
     event SetMinter(address minter);
     event SetAdmin(address admin);

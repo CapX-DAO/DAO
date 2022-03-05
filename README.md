@@ -19,7 +19,7 @@ This project has total of 5 contracts which have to be deployed in the following
 
 To deploy the contracts in the Rinkeby network, enter the following commands into the terminal window: 
 
-    truffle migrate network --rinkeby
+    truffle console network --rinkeby
 
 Once the truffle console opens, enter the following command to deploy all the contracts. 
 
